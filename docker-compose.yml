@@ -1,0 +1,43 @@
+services:
+  db:
+    image: postgres:latest
+    container_name: postgres_tcc2
+    environment:
+      POSTGRES_USER: tcc2
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: tcc2
+    ports:
+      - "5432:5432"
+
+  adminer:
+    image: adminer
+    container_name: adminer_tcc2
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+
+# API
+  hsoares-api:
+    container_name: tcc2-api
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    command: "./scripts/start-development.sh"
+    volumes:
+      - ./backend/:/app/
+    ports:
+      - "8000:8000"
+    environment:
+      - DEBUG=1
+      - SECRET_KEY=django-insecure-whg8eyrugweryu83845438977gh
+      - ALLOWED_HOSTS=localhost, 127.0.0.1
+      - BASE_URL=http://localhost:8000
+      - DATABASE_ENGINE=postgresql
+      - DATABASE_NAME=tcc2
+      - DATABASE_USERNAME=tcc2
+      - DATABASE_PASSWORD=password
+      - DATABASE_HOST=db
+      - DATABASE_PORT=5432
+    depends_on:
+      - db

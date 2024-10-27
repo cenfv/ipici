@@ -1,0 +1,15 @@
+*.pyc
+*.pyo
+*.pyd
+*.env
+*.pem
+*.key
+__pycache__/
+env/
+venv/
+.git/
+.github/
+.vscode/
+Dockerfile
+Dockerfile.dev
+../docker-compose.yml
