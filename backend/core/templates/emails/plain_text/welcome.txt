@@ -1,0 +1,9 @@
+Bem-vindo(a) ao HSoares
+
+Ficamos muito felizes em ter você aqui! Não se esqueça de definir sua senha no link abaixo:
+
+{{ reset_link }}
+
+Para definir sua senha, copie e cole o link acima em seu navegador.
+
+Se você não solicitou isso, por gentileza ignorar este e-mail.

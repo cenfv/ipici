@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>{% block title %}MetaVERSO{% endblock %}</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
+        body {
+            font-family: 'Poppins', sans-serif !important;
+            margin: 0;
+            padding: 0;
+            color: #1D2634;
+            width: 100% !important;
+        }
+
+        .header {
+            padding: 30px;
+            text-align: center;
+            color: white;
+            height: 100px;
+            {#background-image: url('{{ BASE_URL }}/static/template_images/header.png');#}
+            background-size: cover;
+            background-repeat: no-repeat;
+            background-position: center;
+        }
+
+        .footer {
+            font-size: 14px;
+            color: #A5A5A5 !important;
+            text-align: center;
+            padding: 30px 0;
+        }
+
+        .footer-adress {
+            margin-bottom: 30px;
+        }
+
+        .footer_img {
+            height: 33px;
+            background-size: cover;
+            background-repeat: no-repeat;
+            background-position: center;
+            {#background-image: url('{{ BASE_URL }}/static/template_images/footer.png');#}
+        }
+
+        h1, h2 {
+            margin: 0 0 8px 0;
+        }
+
+        .main {
+            width: 100%;
+            padding: 40px 40px 20px 20px;
+            text-align: center;
+            background: #F4F6F9;
+        }
+
+        .button {
+            display: inline-block;
+            width: 100%;
+            max-width: 400px;
+            padding: 15px;
+            margin: 20px auto;
+            background: #3B4B64;
+            color: #fff !important;
+            border: none;
+            border-radius: 12px;
+            text-align: center;
+            text-decoration: none;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            font-size: 14px;
+            line-height: normal;
+        }
+
+        .button:hover {
+            background: #2a3d71;
+        }
+
+        p {
+            margin: 1px;
+        }
+
+        p.small {
+            font-size: 0.8em;
+            color: #A5A5A5;
+        }
+
+        span {
+            font-size: 25px;
+            font-weight: 700;
+            color: #6293BD;
+        }
+    </style>
+</head>
+<body>
+<table border="0" cellpadding="0" cellspacing="0" width="100%">
+    <tr>
+        <td class="header"></td>
+    </tr>
+    <tr>
+        <td class="main">
+            {% block content %}{% endblock %}
+        </td>
+    </tr>
+    <tr>
+        <td class="footer">
+            <div class="footer-adress">
+                <p>Hospital Israelita Albert Einstein</p>
+                <p>Av. Albert Einstein, 627/701 - Morumbi, São Paulo - SP, 05652-900</p>
+            </div>
+            <div>
+                <a href="mailto:contato@einstein.br" style="color:#A5A5A5 !important; text-decoration: none;">
+                    contato@einstein.br
+                </a>
+                <p>(11) 2151-1233</p>
+                <a href="https://www.metaverso.com.br" style="color:#A5A5A5 !important; text-decoration: none;">
+                    www.metaverso.com.br
+                </a>
+            </div>
+            <div class="footer_img"></div>
+        </td>
+    </tr>
+</table>
+</body>
+</html>

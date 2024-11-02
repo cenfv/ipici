@@ -1,0 +1,12 @@
+{% extends "emails/base.html" %}
+
+{% block title %}Bem-vindo(a) ao Metaverso{% endblock %}
+
+{% block content %}
+<div>
+    <h2>Bem-vindo(a) ao <span>Metaverso</span></h2>
+    <p>Ficamos muito felizes em ter você aqui! Não se esqueça de definir sua senha no link abaixo</p>
+    <a class="button" href="{{ reset_link }}">Definir minha senha</a>
+    <p class="small">Se você não solicitou isso, por gentileza ignorar este e-mail</p>
+</div>
+{% endblock %}

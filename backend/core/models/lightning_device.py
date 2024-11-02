@@ -1,0 +1,35 @@
+from django.db import models
+
+from core.models.zone import Zone
+
+
+class LightingDevice(models.Model):
+    TYPE_CHOICES = [
+        ('LUMINARIA', 'Luminária'),
+        ('POSTE', 'Poste'),
+    ]
+    STATUS_CHOICES = [
+        ('OPERACIONAL', 'Operacional'),
+        ('MANUTENCAO', 'Em Manutenção'),
+        ('FALHA', 'Falha Detectada'),
+    ]
+    number = models.CharField(max_length=50, unique=True, verbose_name='Número')
+    owner = models.CharField(max_length=100, verbose_name='Proprietário')
+    structural_name = models.CharField(max_length=100, verbose_name='Denominação Estrutural')
+    type = models.CharField(max_length=50, choices=TYPE_CHOICES, verbose_name='Tipo')
+    height = models.FloatField(verbose_name='Altura')
+    material = models.CharField(max_length=100, verbose_name='Material')
+    installation_date = models.DateField(verbose_name='Data de Instalação')
+    latitude = models.FloatField(verbose_name='Latitude')
+    longitude = models.FloatField(verbose_name='Longitude')
+    operational_status = models.CharField(max_length=50, choices=STATUS_CHOICES, verbose_name='Status Operacional')
+    qr_code = models.CharField(max_length=100, unique=True, verbose_name='Código QR')
+    energy_source = models.CharField(max_length=100, verbose_name='Fonte de Energia')
+    additional_features = models.TextField(blank=True, null=True, verbose_name='Recursos Adicionais')
+    nearby_installations = models.TextField(blank=True, null=True, verbose_name='Instalações Próximas')
+    last_maintenance_date = models.DateField(null=True, blank=True, verbose_name='Data da Última Manutenção')
+    zone = models.ForeignKey(Zone, on_delete=models.SET_NULL, null=True, related_name='devices', verbose_name='Zona')
+
+    class Meta:
+        verbose_name = 'Dispositivo de Iluminação'
+        verbose_name_plural = 'Dispositivos de Iluminação'

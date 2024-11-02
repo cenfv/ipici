@@ -1,29 +1,35 @@
 services:
   db:
     image: postgres:latest
-    container_name: postgres_tcc2
+    container_name: ipici_postgres
     environment:
-      POSTGRES_USER: tcc2
+      POSTGRES_USER: ipici
       POSTGRES_PASSWORD: password
-      POSTGRES_DB: tcc2
+      POSTGRES_DB: ipici
     ports:
       - "5432:5432"
 
   adminer:
     image: adminer
-    container_name: adminer_tcc2
+    container_name: ipici_adminer
     ports:
       - "8080:8080"
     depends_on:
       - db
 
-# API
-  hsoares-api:
-    container_name: tcc2-api
+  mailhog:
+    container_name: ipici-mailhog
+    image: mailhog/mailhog
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+
+  ipici-api:
+    container_name: ipici-api
     build:
       context: ./backend
       dockerfile: Dockerfile
-    command: "./scripts/start-development.sh"
+    command: './scripts/start-api.sh'
     volumes:
       - ./backend/:/app/
     ports:
@@ -34,10 +40,19 @@ services:
       - ALLOWED_HOSTS=localhost, 127.0.0.1
       - BASE_URL=http://localhost:8000
       - DATABASE_ENGINE=postgresql
-      - DATABASE_NAME=tcc2
-      - DATABASE_USERNAME=tcc2
+      - DATABASE_NAME=ipici
+      - DATABASE_USERNAME=ipici
       - DATABASE_PASSWORD=password
       - DATABASE_HOST=db
       - DATABASE_PORT=5432
+      - EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend
+      - EMAIL_HOST=mailhog
+      - EMAIL_PORT=1025
+      - EMAIL_USE_TLS=False
+      - EMAIL_USE_SSL=False
+      - EMAIL_HOST_USER=
+      - EMAIL_HOST_PASSWORD=
+      - DEFAULT_FROM_EMAIL=webmaster@localhost
+      - EMAIL_LOCAL_HOST=http://mailhog
     depends_on:
       - db
