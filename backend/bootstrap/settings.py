@@ -55,11 +55,13 @@ INSTALLED_APPS = [
     'formtools',
     'corsheaders',
     'django.contrib.gis',
+    'leaflet',
 
     # Custom Apps
     'core',
     'accounts',
-    'api'
+    'api',
+    'maps'
 ]
 
 MIDDLEWARE = [
@@ -115,6 +117,19 @@ JAZZMIN_SETTINGS = {
         "core.Sensor": "fas fa-microchip",
         "core.ServiceOrder": "fas fa-file-alt",
         "core.Zone": "fas fa-map-marker-alt",
+    },
+    "hide_models": [
+        "maps.mapdummy",
+    ],
+    "custom_links": {
+        "maps": [
+            {
+                "name": "Ordens de serviço",
+                "url": "maps:map_view",
+                "icon": "fas fa-map",
+                "permissions": ["auth.view_user"],
+            },
+        ]
     },
 
 }
@@ -270,4 +285,13 @@ CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
 CRISPY_TEMPLATE_PACK = "bootstrap5"
 
 CORS_ORIGIN_ALLOW_ALL = True
+
+LEAFLET_CONFIG = {
+    'DEFAULT_CENTER': (-23.185391, -50.648520),
+    'DEFAULT_ZOOM': 15,
+    'MIN_ZOOM': 10,
+    'MAX_ZOOM': 18,
+    'TILES': 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    'ATTRIBUTION_PREFIX': 'Map data &copy; OpenStreetMap contributors',
+}
 

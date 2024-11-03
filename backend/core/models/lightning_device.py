@@ -5,13 +5,32 @@ from core.models.zone import Zone
 
 class LightingDevice(models.Model):
     TYPE_CHOICES = [
-        ('LUMINARIA', 'Luminária'),
-        ('POSTE', 'Poste'),
+        ('POSTE', 'Poste de Iluminação'),
+        ('BRAÇO', 'Braço de Iluminação'),
+        ('LUMINARIA_LED', 'Luminária LED'),
+        ('LUMINARIA_HALOGENA', 'Luminária Halógena'),
+        ('LUMINARIA_FLUORESCENTE', 'Luminária Fluorescente'),
+        ('LUMINARIA_VAPOR_SODIO', 'Luminária Vapor de Sódio'),
+        ('LUMINARIA_VAPOR_METALICO', 'Luminária Vapor Metálico'),
+        ('LUMINARIA_INDUCAO', 'Luminária de Indução'),
+        ('LUMINARIA_SOLAR', 'Luminária Solar'),
+        ('PROJETOR', 'Projetor de Iluminação'),
+        ('ILUMINACAO_DE_EMERGENCIA', 'Iluminação de Emergência'),
+        ('ILUMINACAO_DECORATIVA', 'Iluminação Decorativa'),
+        ('ILUMINACAO_VIAL', 'Iluminação Vial'),
+        ('ILUMINACAO_PEDESTRE', 'Iluminação para Pedestres'),
+        ('ILUMINACAO_CICLOVIA', 'Iluminação de Ciclovia'),
+        ('REFLETOR', 'Refletor de Alta Intensidade'),
+        ('OUTRO', 'Outro')
     ]
     STATUS_CHOICES = [
         ('OPERACIONAL', 'Operacional'),
         ('MANUTENCAO', 'Em Manutenção'),
         ('FALHA', 'Falha Detectada'),
+        ('DESATIVADO', 'Desativado'),
+        ('INDISPONIVEL', 'Indisponível Temporariamente'),
+        ('PENDENTE_ATIVACAO', 'Pendente de Ativação')
+
     ]
     number = models.CharField(max_length=50, unique=True, verbose_name='Número')
     owner = models.CharField(max_length=100, verbose_name='Proprietário')
@@ -21,6 +40,7 @@ class LightingDevice(models.Model):
     material = models.CharField(max_length=100, verbose_name='Material')
     installation_date = models.DateField(verbose_name='Data de Instalação')
     location = PointField(verbose_name='Localização')
+    device_image = models.ImageField(upload_to='devices/', blank=True, null=True, verbose_name='Imagem do dispositivo')
     operational_status = models.CharField(max_length=50, choices=STATUS_CHOICES, verbose_name='Status Operacional')
     qr_code = models.CharField(max_length=100, unique=True, verbose_name='Código QR')
     energy_source = models.CharField(max_length=100, verbose_name='Fonte de Energia')

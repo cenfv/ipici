@@ -1,12 +1,13 @@
 from django.db import models
 from django.contrib.gis.db.models import PointField
 from accounts.models import CustomUser
-from core.models import LightingDevice
+from core.models import LightingDevice, ReportedProblem
 
 
 class ServiceOrder(models.Model):
     PRIORITY_CHOICES = [
         ('ALTA', 'Alta'),
+        ('MEDIA', 'Média'),
         ('BAIXA', 'Baixa'),
     ]
     STATUS_CHOICES = [
@@ -31,6 +32,7 @@ class ServiceOrder(models.Model):
     device = models.ForeignKey(LightingDevice, on_delete=models.CASCADE, related_name='service_orders', verbose_name='Dispositivo')
     problem_type = models.CharField(max_length=100, verbose_name='Tipo de Problema')
     origin = models.CharField(max_length=15, choices=ORIGIN_CHOICES, verbose_name='Origem')
+    reported_problems = models.ManyToManyField(ReportedProblem, related_name='service_orders', verbose_name='Problemas Relatados', blank=True)
 
     class Meta:
         verbose_name = 'Ordem de Serviço'
