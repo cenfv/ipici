@@ -289,9 +289,10 @@ CORS_ORIGIN_ALLOW_ALL = True
 LEAFLET_CONFIG = {
     'DEFAULT_CENTER': (-23.185391, -50.648520),
     'DEFAULT_ZOOM': 15,
-    'MIN_ZOOM': 10,
+    'MIN_ZOOM': 1,
     'MAX_ZOOM': 18,
     'TILES': 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
     'ATTRIBUTION_PREFIX': 'Map data &copy; OpenStreetMap contributors',
+    'RESET_VIEW': False,
 }
 

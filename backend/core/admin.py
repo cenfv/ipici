@@ -1,5 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.models import Group
+
+from .forms import ZoneAdminForm
 from .models import (
     AuditLog, Country, LightingDevice, Maintenance,
     OperationalCost, ReportedProblem, Sensor, ServiceOrder, Zone
@@ -82,15 +84,28 @@ class LightingDeviceAdmin(LeafletGeoAdmin):
     inlines = [MaintenanceInline, OperationalCostInline, SensorInline]
     fieldsets = (
         (None, {
-            'fields': ('number', 'owner', 'structural_name', 'type', 'height', 'material', 'installation_date', 'location')
+            'fields': ('number', 'owner', 'structural_name', 'type', 'height', 'material', 'installation_date', 'zone', 'location')
         }),
         ('Operational Info', {
             'fields': ('operational_status', 'qr_code', 'energy_source', 'last_maintenance_date')
         }),
         ('Additional Info', {
-            'fields': ('device_image', 'additional_features', 'nearby_installations', 'zone')
+            'fields': ('device_image', 'additional_features', 'nearby_installations')
         }),
     )
+
+    class Media:
+        css = {
+            'all': [
+                'https://unpkg.com/leaflet@1.7.1/dist/leaflet.css',
+                'https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css'
+            ]
+        }
+        js = [
+            'https://unpkg.com/leaflet@1.7.1/dist/leaflet.js',
+            'https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js',
+            'js/load_zone_on_select.js'
+        ]
 
 
 @admin.register(ServiceOrder)
@@ -113,11 +128,13 @@ class ServiceOrderAdmin(LeafletGeoAdmin):
 
 @admin.register(Zone)
 class ZoneAdmin(LeafletGeoAdmin):
+    form = ZoneAdminForm
     list_display = ('name', 'description', 'city', 'region', 'neighborhood', 'zone_code', 'device_count', 'problem_count', 'created_at')
     search_fields = ('name', 'zone_code', 'city', 'region', 'neighborhood')
+
     fieldsets = (
         (None, {
-            'fields': ('name', 'description', 'location', 'zone_code')
+            'fields': ('name', 'description', 'location', 'zone_code', 'boundary_color')
         }),
         ('Statistics', {
             'fields': ('device_count', 'problem_count')
