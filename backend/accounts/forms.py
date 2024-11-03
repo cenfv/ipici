@@ -1,7 +1,6 @@
 from django import forms
 from .models import CustomUser
 
-
 class CustomUserCreationForm(forms.ModelForm):
     password1 = forms.CharField(label='Password', widget=forms.PasswordInput, required=False)
     password2 = forms.CharField(label='Password confirmation', widget=forms.PasswordInput, required=False)
@@ -9,7 +8,7 @@ class CustomUserCreationForm(forms.ModelForm):
 
     class Meta:
         model = CustomUser
-        fields = ('email', 'birth_date', 'first_name', 'last_name', 'is_staff', 'is_active')
+        fields = ('first_name', 'last_name', 'country', 'email', 'birth_date', 'is_staff', 'is_active')
 
     def clean_password2(self):
         password1 = self.cleaned_data.get("password1")
@@ -19,17 +18,28 @@ class CustomUserCreationForm(forms.ModelForm):
         return password2
 
     def save(self, commit=True):
-        user = super().save(commit=False)
-        password1 = self.cleaned_data.get("password1")
-
+        email = self.cleaned_data.get("email")
         birth_date = self.cleaned_data.get("birth_date")
-        user.birth_date = birth_date
+        country = self.cleaned_data.get("country")
+        password1 = self.cleaned_data.get("password1")
+        first_name = self.cleaned_data.get("first_name")
+        last_name = self.cleaned_data.get("last_name")
+        is_staff = self.cleaned_data.get("is_staff", False)
+        is_active = self.cleaned_data.get("is_active", True)
 
-        if password1:
-            user.set_password(password1)
-        else:
-            user.set_unusable_password()
+        user = CustomUser.objects.create_user(
+            email=email,
+            password=password1,
+            birth_date=birth_date,
+            country=country,
+            first_name=first_name,
+            last_name=last_name,
+            is_staff=is_staff,
+            is_active=is_active
+        )
 
-        if commit:
-            user.save()
+        self._user = user
         return user
+
+    def save_m2m(self):
+        pass

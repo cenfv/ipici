@@ -1,10 +1,11 @@
 from django.contrib import admin
 from django.contrib.auth.models import Group
+from django.utils.html import format_html
 
 from .forms import ZoneAdminForm
 from .models import (
     AuditLog, Country, LightingDevice, Maintenance,
-    OperationalCost, ReportedProblem, Sensor, ServiceOrder, Zone
+    OperationalCost, ReportedProblem, Sensor, ServiceOrder, Zone, MailHistory
 )
 from leaflet.admin import LeafletGeoAdmin
 
@@ -23,10 +24,10 @@ class AuditLogAdmin(admin.ModelAdmin):
     list_filter = ('action', 'timestamp')
 
 
-@admin.register(Country)
-class CountryAdmin(admin.ModelAdmin):
-    list_display = ('name', 'code')
-    search_fields = ('name', 'code')
+# @admin.register(Country)
+# class CountryAdmin(admin.ModelAdmin):
+#     list_display = ('name', 'code')
+#     search_fields = ('name', 'code')
 
 
 class MaintenanceInline(admin.TabularInline):
@@ -143,3 +144,18 @@ class ZoneAdmin(LeafletGeoAdmin):
             'fields': ('city', 'region', 'neighborhood')
         }),
     )
+
+@admin.register(MailHistory)
+class MailHistoryAdmin(admin.ModelAdmin):
+    list_display = ('subject', 'recipient_list', 'sent_at', 'success', 'error_message', 'view_html_message')
+    list_filter = ('sent_at', 'success')
+    search_fields = ('subject', 'recipient_list', 'error_message', 'html_message', 'plain_message')
+    readonly_fields = ('html_message', 'plain_message')
+
+    def view_html_message(self, obj):
+        return format_html(
+            '<a href="{}" target="_blank" style="background-color: #00599B; color: white; padding: 5px 15px; '
+            'border-radius: 5px; text-decoration: none;">Ver e-mail</a>',
+            obj.get_html_preview_url()
+        )
+    view_html_message.short_description = "Visualização"

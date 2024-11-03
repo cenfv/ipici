@@ -1,3 +1,4 @@
+import logging
 from urllib.parse import urljoin
 from django.conf import settings
 from django.contrib.auth.models import (AbstractBaseUser, BaseUserManager,
@@ -11,15 +12,19 @@ from core.mailers.user_account_mailer import WelcomeMailer
 from core.models.country import Country
 
 
+logger = logging.getLogger()
+
 class CustomUserManager(BaseUserManager):
-    def create_user(self, email, password=None, birth_date=None, **extra_fields):
+    def create_user(self, email, password=None, birth_date=None, country=None, **extra_fields):
         if not email:
             raise ValueError('O endereço de e-mail deve ser fornecido')
         if not birth_date:
             raise ValueError('A data de nascimento deve ser fornecida')
+        if not country:
+            raise ValueError('O país deve ser fornecido')
 
         email = self.normalize_email(email)
-        user = self.model(email=email, birth_date=birth_date, **extra_fields)
+        user = self.model(email=email, birth_date=birth_date, country=country, **extra_fields)
         user.set_password(password) if password else user.set_unusable_password()
         user.save(using=self._db)
 

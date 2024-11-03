@@ -117,6 +117,7 @@ JAZZMIN_SETTINGS = {
         "core.Sensor": "fas fa-microchip",
         "core.ServiceOrder": "fas fa-file-alt",
         "core.Zone": "fas fa-map-marker-alt",
+        "core.MailHistory": "fas fa-envelope",
     },
     "hide_models": [
         "maps.mapdummy",
@@ -200,6 +201,10 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'staticfiles'),
 ]
+
+MEDIA_URL = '/media/'
+
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
@@ -302,3 +307,5 @@ LEAFLET_CONFIG = {
     'RESET_VIEW': False,
 }
 
+BASE_URL = os.getenv('BASE_URL', 'http://localhost:8000')
+PORTAL_URL = os.getenv('PORTAL_URL', 'http://localhost:3000')

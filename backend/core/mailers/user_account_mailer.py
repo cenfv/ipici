@@ -14,6 +14,6 @@ class WelcomeMailer(BaseMailer):
     template_name = 'emails/new_user_welcome.html'
 
     def __init__(self, recipient_list, reset_link):
-        subject = 'Seja bem-vindo(a) ao Metaverso!'
+        subject = 'Seja bem-vindo(a) ao IPICI!'
         context = {'reset_link': reset_link}
         super().__init__(recipient_list, subject, context)
