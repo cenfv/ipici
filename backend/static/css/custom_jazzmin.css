@@ -1,0 +1,89 @@
+.btn-primary,
+.btn-outline-primary {
+    background-color: #00599B;
+    border-color: #00599B;
+    color: #ffffff;
+}
+
+.btn-primary:hover,
+.btn-outline-primary:hover {
+    background-color: #00457A;
+    border-color: #00457A;
+}
+
+.btn-success,
+.btn-outline-success {
+    background-color: #00457A;
+    border-color: #00457A;
+}
+
+.btn-success:hover,
+.btn-outline-success:hover {
+    background-color: #00325C;
+    border-color: #00325C;
+}
+
+.btn-success:active,
+.btn-outline-success:active {
+    background-color: #00325C !important;
+    border-color: #00325C !important;
+}
+
+.btn-info,
+.btn-outline-info {
+    background-color: #007BA7;
+    border-color: #007BA7;
+}
+
+.btn-info:hover,
+.btn-outline-info:hover {
+    background-color: #00597D;
+    border-color: #00597D;
+}
+
+.btn-danger,
+.btn-outline-danger {
+    background-color: #A00000;
+    border-color: #A00000;
+}
+
+.btn-danger:hover,
+.btn-outline-danger:hover {
+    background-color: #7A0000;
+    border-color: #7A0000;
+}
+
+.nav-item.active > .nav-link,
+.nav-item > .nav-link.active {
+    color: #00599B;
+    border-bottom-color: #00599B;
+}
+
+.sidebar,
+.main-sidebar {
+    background-color: #26364d !important;
+}
+
+.sidebar .nav-item.active > .nav-link,
+.sidebar .nav-item > .nav-link.active {
+    background-color: #00599B !important;
+    color: #ffffff !important;
+    border-left: 3px solid #ffffff;
+}
+
+.sidebar .nav-link {
+    color: #d1d5db;
+}
+
+.sidebar .nav-link:hover {
+    background-color: #00457A;
+    color: #ffffff;
+}
+
+.sidebar .nav-header {
+    color: #b0bec5;
+}
+
+
+
+

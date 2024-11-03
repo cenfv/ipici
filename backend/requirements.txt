@@ -25,3 +25,6 @@ requests
 gunicorn
 django_extensions==3.2.3
 pillow==11.0.0
+psycopg2==2.9.10
+GDAL>=3.0,<4.0
+

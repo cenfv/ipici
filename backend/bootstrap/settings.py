@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     'crispy_bootstrap5',
     'formtools',
     'corsheaders',
+    'django.contrib.gis',
 
     # Custom Apps
     'core',
@@ -104,8 +105,18 @@ JAZZMIN_SETTINGS = {
     "theme": "default",
     "custom_css": "/css/custom_jazzmin.css",
     "icons": {
+        "accounts.CustomUser": "fas fa-user",
+        "core.AuditLog": "fas fa-history",
+        "core.Country": "fas fa-flag",
+        "core.LightingDevice": "fas fa-lightbulb",
+        "core.Maintenance": "fas fa-tools",
+        "core.OperationalCost": "fas fa-money-bill-wave",
+        "core.ReportedProblem": "fas fa-exclamation-triangle",
+        "core.Sensor": "fas fa-microchip",
+        "core.ServiceOrder": "fas fa-file-alt",
+        "core.Zone": "fas fa-map-marker-alt",
+    },
 
-    }
 }
 
 
@@ -117,14 +128,12 @@ WSGI_APPLICATION = 'bootstrap.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.{}'.format(
-            os.getenv('DATABASE_ENGINE', 'sqlite3')
-        ),
-        'NAME': os.getenv('DATABASE_NAME', os.path.join(BASE_DIR, 'db.sqlite3')),
+        'ENGINE': 'django.contrib.gis.db.backends.postgis',
+        'NAME': os.getenv('DATABASE_NAME', 'ipici'),
         'USER': os.getenv('DATABASE_USERNAME', 'dbuser'),
         'PASSWORD': os.getenv('DATABASE_PASSWORD', 'dbpassword'),
         'HOST': os.getenv('DATABASE_HOST', '127.0.0.1'),
-        'PORT': os.getenv('DATABASE_PORT', 5432),
+        'PORT': os.getenv('DATABASE_PORT', '5432'),
     }
 }
 

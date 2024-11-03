@@ -1,5 +1,5 @@
 from django.db import models
-
+from django.contrib.gis.db.models import PointField
 from accounts.models import CustomUser
 from core.models import LightingDevice
 
@@ -23,8 +23,7 @@ class ServiceOrder(models.Model):
     description = models.TextField(verbose_name='Descrição')
     creation_date = models.DateTimeField(auto_now_add=True, verbose_name='Data de Criação')
     priority = models.CharField(max_length=5, choices=PRIORITY_CHOICES, verbose_name='Prioridade')
-    latitude = models.FloatField(verbose_name='Latitude')
-    longitude = models.FloatField(verbose_name='Longitude')
+    location = PointField(verbose_name='Localização', )
     status = models.CharField(max_length=15, choices=STATUS_CHOICES, verbose_name='Status')
     responsible = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, related_name='service_orders_responsible', verbose_name='Responsável')
     author = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, related_name='service_orders_author', verbose_name='Autor')

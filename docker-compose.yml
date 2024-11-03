@@ -1,6 +1,6 @@
 services:
   db:
-    image: postgres:latest
+    image: postgis/postgis:latest 
     container_name: ipici_postgres
     environment:
       POSTGRES_USER: ipici
@@ -8,6 +8,8 @@ services:
       POSTGRES_DB: ipici
     ports:
       - "5432:5432"
+    volumes:
+      - ./backend/init_postgis.sql:/docker-entrypoint-initdb.d/init_postgis.sql 
 
   adminer:
     image: adminer

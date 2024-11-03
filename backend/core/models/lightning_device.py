@@ -1,5 +1,5 @@
 from django.db import models
-
+from django.contrib.gis.db.models import PointField
 from core.models.zone import Zone
 
 
@@ -20,8 +20,7 @@ class LightingDevice(models.Model):
     height = models.FloatField(verbose_name='Altura')
     material = models.CharField(max_length=100, verbose_name='Material')
     installation_date = models.DateField(verbose_name='Data de Instalação')
-    latitude = models.FloatField(verbose_name='Latitude')
-    longitude = models.FloatField(verbose_name='Longitude')
+    location = PointField(verbose_name='Localização')
     operational_status = models.CharField(max_length=50, choices=STATUS_CHOICES, verbose_name='Status Operacional')
     qr_code = models.CharField(max_length=100, unique=True, verbose_name='Código QR')
     energy_source = models.CharField(max_length=100, verbose_name='Fonte de Energia')
@@ -31,5 +30,5 @@ class LightingDevice(models.Model):
     zone = models.ForeignKey(Zone, on_delete=models.SET_NULL, null=True, related_name='devices', verbose_name='Zona')
 
     class Meta:
-        verbose_name = 'Dispositivo de Iluminação'
-        verbose_name_plural = 'Dispositivos de Iluminação'
+        verbose_name = 'Dispositivo'
+        verbose_name_plural = 'Dispositivos'

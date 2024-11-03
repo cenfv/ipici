@@ -1,42 +1,28 @@
 FROM python:3.12.3-alpine
 
-# Set the working directory to /app
+# Defina o diretório de trabalho como /app
 WORKDIR /app
 
-# Installing dependencies
-RUN apk add --no-cache sed
+# Instala dependências essenciais para o backend PostGIS do Django
+RUN apk add --no-cache gdal gdal-dev geos geos-dev proj proj-dev libc6-compat postgresql-dev build-base
 
-# Creating a non-root group
-RUN addgroup --system django_user_group
-
-# Creating a non-root user
-RUN adduser --system --ingroup django_user_group django_user
-
-# Adjusting permissions to new user
-RUN chown -R django_user:django_user_group /app
-
-# Prevent Python from writing pyc files to disc
+# Configurações de ambiente para evitar pyc e buffering
 ENV PYTHONDONTWRITEBYTECODE 1
-
-# Prevent Python from buffering stdout and stderr
 ENV PYTHONUNBUFFERED 1
 
-# Copy necessary files and directories into the container
+# Copia os arquivos do projeto para o container
 COPY . .
 
-# install project dependencies
+# Instala as dependências do Python
 RUN pip install --upgrade pip
-
-# Install any needed packages specified in requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Change the line break for all the scripts, changing from CRLF to LF
-RUN find ./scripts -type f -name "*.sh" -exec sed -i 's/\r$//' {} +
+# Corrige as quebras de linha e torna os scripts executáveis
+RUN find ./scripts -type f -name "*.sh" -exec sed -i 's/\r$//' {} + \
+    && chmod +x ./scripts/*.sh
 
-# Make the scripts are executable
-RUN chmod +x ./scripts/*.sh
-
-# Expose the default Django port
+# Exponha a porta padrão do Django
 EXPOSE 8000
 
+# Comando para iniciar a aplicação em produção
 CMD ["./scripts/start-production.sh"]
