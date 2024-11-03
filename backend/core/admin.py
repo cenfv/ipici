@@ -5,9 +5,6 @@ from .models import (
     OperationalCost, ReportedProblem, Sensor, ServiceOrder, Zone
 )
 from leaflet.admin import LeafletGeoAdmin
-from django.urls import path
-from django.shortcuts import render
-from django.utils.translation import gettext_lazy as _
 
 try:
     from rest_framework.authtoken.models import TokenProxy as DRFToken
@@ -19,8 +16,8 @@ admin.site.unregister(DRFToken)
 
 @admin.register(AuditLog)
 class AuditLogAdmin(admin.ModelAdmin):
-    list_display = ('user', 'action', 'timestamp')
-    search_fields = ('user__first_name', 'action')
+    list_display = ('user', 'action', 'description', 'timestamp')
+    search_fields = ('user__email', 'action', 'description')
     list_filter = ('action', 'timestamp')
 
 
@@ -49,45 +46,40 @@ class SensorInline(admin.TabularInline):
     model = Sensor
     extra = 1
 
-
-class ServiceOrderInline(admin.TabularInline):
-    model = ServiceOrder
-    extra = 1
-
 @admin.register(Maintenance)
 class MaintenanceAdmin(admin.ModelAdmin):
-    list_display = ('device', 'maintenance_date', 'responsible_technician', 'cost')
-    search_fields = ('device__number', 'responsible_technician__first_name')
-    list_filter = ('maintenance_date',)
+    list_display = ('device', 'maintenance_date', 'description', 'responsible_technician', 'cost')
+    search_fields = ('device__number', 'responsible_technician__email', 'description')
+    list_filter = ('maintenance_date', 'responsible_technician')
 
 
 @admin.register(OperationalCost)
 class OperationalCostAdmin(admin.ModelAdmin):
-    list_display = ('device', 'cost_type', 'value', 'date')
-    search_fields = ('device__number', 'cost_type')
+    list_display = ('device', 'cost_type', 'value', 'date', 'description')
+    search_fields = ('device__number', 'cost_type', 'description')
     list_filter = ('cost_type', 'date')
 
 
 @admin.register(ReportedProblem)
 class ReportedProblemAdmin(admin.ModelAdmin):
-    list_display = ('user', 'device', 'status', 'report_date')
-    search_fields = ('user__first_name', 'device__number', 'status')
+    list_display = ('user', 'device', 'status', 'report_date', 'description', 'image')
+    search_fields = ('user__email', 'device__number', 'status', 'description')
     list_filter = ('status', 'report_date')
 
 
 @admin.register(Sensor)
 class SensorAdmin(admin.ModelAdmin):
-    list_display = ('device', 'sensor_status', 'last_report_date', 'battery_level')
-    search_fields = ('device__number', 'sensor_status')
+    list_display = ('device', 'sensor_status', 'last_report_date', 'connection_type', 'firmware_version', 'battery_level')
+    search_fields = ('device__number', 'sensor_status', 'connection_type', 'firmware_version')
     list_filter = ('sensor_status', 'connection_type')
 
 
 @admin.register(LightingDevice)
 class LightingDeviceAdmin(LeafletGeoAdmin):
-    list_display = ('number', 'owner', 'type', 'operational_status', 'zone')
-    search_fields = ('number', 'owner', 'qr_code')
+    list_display = ('number', 'owner', 'structural_name', 'type', 'height', 'material', 'installation_date', 'operational_status', 'qr_code', 'energy_source', 'zone')
+    search_fields = ('number', 'owner', 'structural_name', 'qr_code', 'energy_source')
     list_filter = ('type', 'operational_status', 'zone')
-    inlines = [MaintenanceInline, OperationalCostInline, ReportedProblemInline, SensorInline, ServiceOrderInline]
+    inlines = [MaintenanceInline, OperationalCostInline, SensorInline]
     fieldsets = (
         (None, {
             'fields': ('number', 'owner', 'structural_name', 'type', 'height', 'material', 'installation_date', 'location')
@@ -96,16 +88,16 @@ class LightingDeviceAdmin(LeafletGeoAdmin):
             'fields': ('operational_status', 'qr_code', 'energy_source', 'last_maintenance_date')
         }),
         ('Additional Info', {
-            'fields': ('additional_features', 'nearby_installations', 'zone')
+            'fields': ('device_image', 'additional_features', 'nearby_installations', 'zone')
         }),
     )
 
 
 @admin.register(ServiceOrder)
 class ServiceOrderAdmin(LeafletGeoAdmin):
-    list_display = ('title', 'priority', 'status', 'responsible')
-    search_fields = ('title', 'responsible__first_name', 'author__first_name')
-    list_filter = ('priority', 'status', 'origin')
+    list_display = ('title', 'priority', 'status', 'responsible', 'author', 'creation_date', 'origin', 'problem_type', 'device')
+    search_fields = ('title', 'description', 'responsible__email', 'author__email', 'device__number', 'problem_type')
+    list_filter = ('priority', 'status', 'origin', 'creation_date')
     fieldsets = (
         (None, {
             'fields': ('title', 'description', 'priority', 'location')
@@ -114,13 +106,23 @@ class ServiceOrderAdmin(LeafletGeoAdmin):
             'fields': ('status', 'responsible', 'author')
         }),
         ('Device Information', {
-            'fields': ('device_image', 'device', 'problem_type', 'origin')
+            'fields': ('device_image', 'device', 'problem_type', 'origin', 'reported_problems')
         }),
     )
 
 
 @admin.register(Zone)
-class ZoneAdmin(admin.ModelAdmin):
-    list_display = ('name', 'description')
-    search_fields = ('name',)
-
+class ZoneAdmin(LeafletGeoAdmin):
+    list_display = ('name', 'description', 'city', 'region', 'neighborhood', 'zone_code', 'device_count', 'problem_count', 'created_at')
+    search_fields = ('name', 'zone_code', 'city', 'region', 'neighborhood')
+    fieldsets = (
+        (None, {
+            'fields': ('name', 'description', 'location', 'zone_code')
+        }),
+        ('Statistics', {
+            'fields': ('device_count', 'problem_count')
+        }),
+        ('Additional Info', {
+            'fields': ('city', 'region', 'neighborhood')
+        }),
+    )

@@ -8,13 +8,12 @@ from core.models import ServiceOrder
 
 @staff_member_required
 def map_view(request):
-    open_orders = ServiceOrder.objects.filter(status="ABERTA")
+    all_orders = ServiceOrder.objects.all()
     context = admin.site.each_context(request)
 
-    # Inclui campos adicionais no GeoJSON
     orders_geojson = serialize(
         'geojson',
-        open_orders,
+        all_orders,
         geometry_field='location',
         fields=('title', 'status', 'description', 'priority', 'creation_date', 'responsible__first_name')
     )
