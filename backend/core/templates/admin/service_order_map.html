@@ -1,0 +1,424 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block title %}Mapa de Ordens de Serviço{% endblock %}
+
+{% block breadcrumbs %}
+    <div class="breadcrumbs">
+        <a href="{% url 'admin:index' %}">{% translate 'Home' %}</a>
+        &rsaquo; <a href="{% url 'admin:app_list' app_label='core' %}">Dashboard</a>
+        &rsaquo; Mapa de Ordens de Serviço
+    </div>
+{% endblock %}
+
+{% block content %}
+
+<div id="filter-container">
+    <label for="status-filter" >Filtrar por Status:</label>
+    <select id="status-filter" onchange="filterOrders()" style="margin-right: 20px;">
+        <option value="all">Todas</option>
+        <option value="ABERTA">Aberta</option>
+        <option value="EM_ANDAMENTO">Em Andamento</option>
+        <option value="CONCLUIDA">Concluída</option>
+    </select>
+    
+    <label for="priority-filter" >Filtrar por Prioridade:</label>
+    <select id="priority-filter" onchange="filterOrders()" style="margin-right: 20px;">
+        <option value="all">Todas</option>
+        <option value="ALTA">Alta</option>
+        <option value="MEDIA">Média</option>
+        <option value="BAIXA">Baixa</option>
+    </select>
+	
+	<label>
+        <input type="checkbox" id="toggle-zones" onchange="toggleZones()" checked> Mostrar Zonas
+    </label>
+
+    <label>
+        <input type="checkbox" id="toggle-orders" onchange="toggleOrders()" checked> Mostrar Ordens de Serviço
+    </label>
+    
+    <div id="geocoder-container" style="display: inline-block;"></div>
+</div>
+
+
+<div id="map-container" style="position: relative; width: 100%; height: 80vh;">
+    <div id="map" style="width: 100%; height: 100%;"></div>
+
+    <div id="order-details" style="display: none;">
+        <div id="order-info">Clique em uma ordem no mapa para ver detalhes.</div>
+    </div>
+	
+	<div id="coordinates" style="position: absolute; bottom: 10px; left: 80px; background-color: rgba(255, 255, 255, 0.8); padding: 5px 10px; border-radius: 4px; font-size: 14px; z-index: 999">
+        Coordenadas: <span id="coords-text">Passe o mouse sobre o mapa</span>
+    </div>
+</div>
+
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
+<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+
+<style>
+    #filter-container {
+        width: 100%;
+        margin-top: -15px;
+        padding: 15px 20px;
+        background-color: #f1f5f9;
+        box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
+        border-radius: 8px;
+        display: flex;
+        gap: 20px;
+        align-items: center;
+    }
+    
+    #filter-container label {
+        font-weight: bold;
+        color: #444;
+        font-size: 14px;
+    }
+
+    #filter-container select {
+        padding: 8px 12px;
+        font-size: 14px;
+        border-radius: 4px;
+        border: 1px solid #ddd;
+        background-color: #fff;
+    }
+    
+    #map-container {
+        position: relative;
+    }
+    
+    #map {
+        position: relative;
+        top: 0;
+        left: 0;
+    }
+
+     #order-details {
+        position: absolute;
+        top: 0px;
+        right: 0;
+        width: 25%;
+        height: calc(100% - 20px);
+        background-color: rgba(255, 255, 255, 0.95);
+        padding: 0;
+        box-shadow: -3px 0px 10px rgba(0, 0, 0, 0.3);
+        overflow-y: auto;
+        z-index: 1000;
+        border-radius: 8px 0 0 8px;
+        transition: 0.3s ease;
+        font-family: Arial, sans-serif;
+        color: #333;
+    }
+
+    #order-header {
+        background-color: #00457A;
+        color: #fff;
+        text-align: center;
+        padding: 15px;
+        font-size: 18px;
+        font-weight: bold;
+        border-top-left-radius: 8px;
+    }
+
+    #order-details button {
+        background: none;
+        border: none;
+        color: #fff;
+        font-size: 18px;
+        font-weight: bold;
+        cursor: pointer;
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        transition: color 0.2s;
+    }
+
+    #order-details button:hover {
+        color: #ddd;
+    }
+
+    #order-details img {
+	    width: 100%;
+	    height: 300px;
+	    border-radius: 0 0 8px 8px;
+	    margin-bottom: 10px;
+	    object-fit: cover;
+	}
+    
+    #order-content {
+        padding: 20px;
+    }
+
+    #order-content p {
+        margin: 8px 0;
+        line-height: 1.4;
+        font-size: 14px;
+    }
+
+    #order-content p b {
+        color: #0056b3;
+    }
+    
+    .priority-alta {
+        color: #FF5C5C;
+    }
+    .priority-media {
+        color: #FFDB5B;
+    }
+    .priority-baixa {
+        color: #3274A3;
+    }
+    .zone-label {
+	    font-size: 13px;
+	    font-weight: bold;
+	    color: #00457A;
+	    background-color: rgba(255, 255, 255, 0.8);
+	    padding: 2px 6px;
+	    border-radius: 4px;
+	    text-align: center;
+	}
+</style>
+
+<script>
+    const leafletConfig = {{ leaflet_config|safe }};
+    const map = L.map('map').setView(leafletConfig.DEFAULT_CENTER, leafletConfig.DEFAULT_ZOOM);
+
+    L.control.layers({
+        "OpenStreetMap": L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            attribution: "Map data &copy; <a href='https://openstreetmap.org'>OpenStreetMap</a> contributors"
+        }),
+        "Google Satellite": L.tileLayer("https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}", {
+            attribution: "Map data &copy; <a href='https://google.com'>Google Maps</a> contributors"
+        }),
+        "Google Maps": L.tileLayer("https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}", {
+            attribution: "Map data &copy; <a href='https://google.com'>Google Maps</a> contributors"
+        }),
+        "Google Terrain": L.tileLayer("https://mt1.google.com/vt/lyrs=p&x={x}&y={y}&z={z}", {
+            attribution: "Map data &copy; <a href='https://google.com'>Google Maps</a> contributors"
+        }),
+        "Google Hybrid": L.tileLayer("https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}", {
+            attribution: "Map data &copy; <a href='https://google.com'>Google Maps</a> contributors"
+        })
+    }, null, { position: 'bottomleft' }).addTo(map);
+
+    L.tileLayer(leafletConfig.TILES, {
+        attribution: leafletConfig.ATTRIBUTION_PREFIX
+    }).addTo(map);
+
+    const zonesGeoJSON = {{ zones_geojson|safe }};
+    let zonesLayer = L.geoJSON(zonesGeoJSON, {
+	    style: function (feature) {
+	        return {
+	            color: feature.properties.boundary_color || "#3388ff",
+	            weight: 2,
+	            opacity: 0.6,
+	            fillColor: feature.properties.boundary_color || "#3388ff",
+	            fillOpacity: 0.2
+	        };
+	    },
+	    onEachFeature: function (feature, layer) {
+	        const zoneInfo = `
+	            <b>Zona:</b> ${feature.properties.name}<br>
+	            <b>Cidade:</b> ${feature.properties.city}<br>
+	            <b>Região:</b> ${feature.properties.region}<br>
+	            <b>Bairro:</b> ${feature.properties.neighborhood}<br>
+	            <b>Descrição:</b> ${feature.properties.description}
+	        `;
+	        layer.bindPopup(zoneInfo);
+	
+	        const label = L.divIcon({
+	            className: 'zone-label',
+	            html: `<div>${feature.properties.name}</div>`,
+	            iconSize: [90, 20]
+	        });
+	
+	        const bounds = layer.getBounds();
+	        const topLeft = bounds.getNorthWest();
+	
+	        const labelMarker = L.marker(topLeft, { icon: label, interactive: false });
+	        layer.on('add', () => map.addLayer(labelMarker));
+	        layer.on('remove', () => map.removeLayer(labelMarker));
+	    }
+	}).addTo(map);
+
+    const icons = {
+        ALTA: L.icon({
+            iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',
+            iconSize: [25, 41],
+            iconAnchor: [12, 41],
+            popupAnchor: [1, -34],
+            shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
+            shadowSize: [41, 41]
+        }),
+        MEDIA: L.icon({
+            iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-gold.png',
+            iconSize: [25, 41],
+            iconAnchor: [12, 41],
+            popupAnchor: [1, -34],
+            shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
+            shadowSize: [41, 41]
+        }),
+        BAIXA: L.icon({
+            iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-blue.png',
+            iconSize: [25, 41],
+            iconAnchor: [12, 41],
+            popupAnchor: [1, -34],
+            shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
+            shadowSize: [41, 41]
+        }),
+        DEFAULT: L.icon({
+            iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
+            iconSize: [25, 41],
+            iconAnchor: [12, 41],
+            popupAnchor: [1, -34],
+            shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
+            shadowSize: [41, 41]
+        })
+    };
+
+    const ordersGeoJSON = {{ orders_geojson|safe }};
+    let ordersLayer = L.geoJSON(ordersGeoJSON, {
+        pointToLayer: function (feature, latlng) {
+            const icon = icons[feature.properties.priority] || icons.DEFAULT;
+            return L.marker(latlng, { icon: icon });
+        },
+        onEachFeature: function (feature, layer) {
+            const orderData = {
+                title: feature.properties.title,
+                status: feature.properties.status,
+                description: feature.properties.description,
+                priority: feature.properties.priority,
+                creationDate: feature.properties.creation_date,
+                author_name: feature.properties.author_name,
+                responsible_name: feature.properties.responsible_name,
+                location: `${feature.geometry.coordinates[1]}, ${feature.geometry.coordinates[0]}`
+            };
+            layer.bindPopup(`<b>Ordem:</b> ${orderData.title}<br><b>Status:</b> ${orderData.status}<br><b>Prioridade:</b> ${orderData.priority}`);
+            layer.on('click', function() {
+                showOrderDetails(orderData);
+            });
+        }
+    }).addTo(map);
+
+    function showOrderDetails(order) {
+        const defaultImage = 'https://via.placeholder.com/300x200?text=Sem+Imagem';
+        const imageUrl = order.device_image || defaultImage;
+
+        document.getElementById('order-info').innerHTML = `
+            <div id="order-header">Detalhes da Ordem de Serviço</div>
+            <button onclick="document.getElementById('order-details').style.display = 'none'">✕</button>
+            <div id="order-content">
+                <h3>${order.title}</h3>
+                <p class="${getPriorityClass(order.priority)}"><b>Prioridade:</b> ${order.priority}</p>
+                <p><b>Autor:</b> ${order.author_name}</p>
+                <p><b>Coordenadas:</b> ${order.location}</p>
+                <p><b>Status:</b> ${order.status}</p>
+                <p><b>Data de Criação:</b> ${formatDate(order.creationDate)}</p>
+                <p><b>Responsável:</b> ${order.responsible_name}</p>
+                <img src="${imageUrl}" alt="Imagem do Dispositivo">
+                <p><b>Descrição:</b><br> ${order.description}</p>
+            </div>
+        `;
+        document.getElementById('order-details').style.display = 'block';
+    }
+
+    function formatDate(dateStr) {
+        const date = new Date(dateStr);
+        const options = { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' };
+        return date.toLocaleDateString('pt-BR', options);
+    }
+
+    function getPriorityClass(priority) {
+        return priority === 'ALTA' ? 'priority-alta' : priority === 'MEDIA' ? 'priority-media' : 'priority-baixa';
+    }
+
+    function toggleZones() {
+        const checkbox = document.getElementById('toggle-zones');
+        if (checkbox.checked) {
+            map.addLayer(zonesLayer);
+        } else {
+            map.removeLayer(zonesLayer);
+        }
+    }
+
+    function toggleOrders() {
+        const checkbox = document.getElementById('toggle-orders');
+        if (checkbox.checked) {
+            map.addLayer(ordersLayer);
+        } else {
+            map.removeLayer(ordersLayer);
+        }
+    }
+
+    function filterOrders() {
+        const status = document.getElementById('status-filter').value;
+        const priority = document.getElementById('priority-filter').value;
+        addOrdersToMap(status, priority);
+    }
+
+    function addOrdersToMap(status, priority) {
+        if (ordersLayer) {
+            map.removeLayer(ordersLayer);
+        }
+
+        ordersLayer = L.geoJSON(ordersGeoJSON, {
+            filter: function (feature) {
+                const matchesStatus = status === 'all' || feature.properties.status === status;
+                const matchesPriority = priority === 'all' || feature.properties.priority === priority;
+                return matchesStatus && matchesPriority;
+            },
+            pointToLayer: function (feature, latlng) {
+                const icon = icons[feature.properties.priority] || icons.DEFAULT;
+                return L.marker(latlng, { icon: icon });
+            },
+            onEachFeature: function (feature, layer) {
+                const orderData = {
+                    title: feature.properties.title,
+                    status: feature.properties.status,
+                    description: feature.properties.description,
+                    priority: feature.properties.priority,
+                    creationDate: feature.properties.creation_date,
+                    author_name: feature.properties.author_name,
+                    responsible_name: feature.properties.responsible_name,
+                    location: `${feature.geometry.coordinates[1]}, ${feature.geometry.coordinates[0]}`
+                };
+                layer.bindPopup(`<b>Ordem:</b> ${orderData.title}<br><b>Status:</b> ${orderData.status}<br><b>Prioridade:</b> ${orderData.priority}`);
+                layer.on('click', function() {
+                    showOrderDetails(orderData);
+                });
+            }
+        }).addTo(map);
+    }
+
+    toggleZones();
+    toggleOrders();
+    
+    const geocoder = L.Control.geocoder({
+        position: 'topleft',
+        defaultMarkGeocode: false
+    }).on('markgeocode', function(e) {
+        const bbox = e.geocode.bbox;
+        const poly = L.polygon([
+            bbox.getSouthEast(),
+            bbox.getNorthEast(),
+            bbox.getNorthWest(),
+            bbox.getSouthWest()
+        ]).addTo(map);
+        map.fitBounds(poly.getBounds());
+    });
+
+    geocoder.addTo(map);
+
+    map.on('mousemove', function (e) {
+        const coordsText = `Lat: ${e.latlng.lat.toFixed(5)}, Lng: ${e.latlng.lng.toFixed(5)}`;
+        document.getElementById('coords-text').textContent = coordsText;
+    });
+</script>
+
+
+
+{% endblock %}

@@ -124,14 +124,20 @@ JAZZMIN_SETTINGS = {
     "custom_links": {
         "maps": [
             {
-                "name": "Ordens de serviço",
-                "url": "maps:map_view",
-                "icon": "fas fa-map",
+                "name": "Dispositivos",
+                "url": "maps:device_map_view",
+                "icon": "fas fa-satellite-dish",
                 "permissions": ["auth.view_user"],
             },
+            {
+                "name": "Ordens de serviço",
+                "url": "maps:service_order_map_view",
+                "icon": "fas fa-wrench",
+                "permissions": ["auth.view_user"],
+            }
+
         ]
     },
-
 }
 
 

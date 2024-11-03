@@ -1,0 +1,352 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block title %}Mapa de Dispositivos{% endblock %}
+
+{% block breadcrumbs %}
+    <div class="breadcrumbs">
+        <a href="{% url 'admin:index' %}">{% translate 'Home' %}</a>
+        &rsaquo; <a href="{% url 'admin:app_list' app_label='core' %}">Dashboard</a>
+        &rsaquo; Mapa de dispositivos
+    </div>
+{% endblock %}
+
+{% block content %}
+
+<div id="filter-container">
+    <label for="type-filter">Filtrar por Tipo:</label>
+    <select id="type-filter" onchange="filterDevices()" style="margin-right: 20px;">
+        <option value="all">Todos</option>
+        {% for type, label in device_types %}
+            <option value="{{ type }}">{{ label }}</option>
+        {% endfor %}
+    </select>
+
+    <label for="status-filter">Filtrar por Status Operacional:</label>
+    <select id="status-filter" onchange="filterDevices()" style="margin-right: 20px;">
+        <option value="all">Todos</option>
+        {% for status, label in operational_statuses %}
+            <option value="{{ status }}">{{ label }}</option>
+        {% endfor %}
+    </select>
+
+    <label>
+        <input type="checkbox" id="toggle-zones" onchange="toggleZones()" checked> Mostrar Zonas
+    </label>
+
+    <label>
+        <input type="checkbox" id="toggle-devices" onchange="toggleDevices()" checked> Mostrar Dispositivos
+    </label>
+</div>
+
+
+<div id="map-container" style="position: relative; width: 100%; height: 80vh;">
+    <div id="map" style="width: 100%; height: 100%;"></div>
+</div>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
+<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+
+<style>
+    #filter-container {
+        width: 100%;
+        margin-top: -15px;
+        padding: 15px 20px;
+        background-color: #f1f5f9;
+        box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
+        border-radius: 8px;
+        display: flex;
+        gap: 20px;
+        align-items: center;
+    }
+    
+    #filter-container label {
+        font-weight: bold;
+        color: #444;
+        font-size: 14px;
+    }
+
+    #filter-container select {
+        padding: 8px 12px;
+        font-size: 14px;
+        border-radius: 4px;
+        border: 1px solid #ddd;
+        background-color: #fff;
+    }
+    
+    #map-container {
+        position: relative;
+    }
+    
+    #map {
+        position: relative;
+        top: 0;
+        left: 0;
+    }
+
+     #order-details {
+        position: absolute;
+        top: 0px;
+        right: 0;
+        width: 25%;
+        height: calc(100% - 20px);
+        background-color: rgba(255, 255, 255, 0.95);
+        padding: 0;
+        box-shadow: -3px 0px 10px rgba(0, 0, 0, 0.3);
+        overflow-y: auto;
+        z-index: 1000;
+        border-radius: 8px 0 0 8px;
+        transition: 0.3s ease;
+        font-family: Arial, sans-serif;
+        color: #333;
+    }
+
+    #order-header {
+        background-color: #00457A;
+        color: #fff;
+        text-align: center;
+        padding: 15px;
+        font-size: 18px;
+        font-weight: bold;
+        border-top-left-radius: 8px;
+    }
+
+    #order-details button {
+        background: none;
+        border: none;
+        color: #fff;
+        font-size: 18px;
+        font-weight: bold;
+        cursor: pointer;
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        transition: color 0.2s;
+    }
+
+    #order-details button:hover {
+        color: #ddd;
+    }
+
+    #order-details img {
+	    width: 100%;
+	    height: 300px;
+	    border-radius: 0 0 8px 8px;
+	    margin-bottom: 10px;
+	    object-fit: cover;
+	}
+    
+    #order-content {
+        padding: 20px;
+    }
+
+    #order-content p {
+        margin: 8px 0;
+        line-height: 1.4;
+        font-size: 14px;
+    }
+
+    #order-content p b {
+        color: #0056b3;
+    }
+    
+    .priority-alta {
+        color: #FF5C5C;
+    }
+    .priority-media {
+        color: #FFDB5B;
+    }
+    .priority-baixa {
+        color: #3274A3;
+    }
+    .zone-label {
+	    font-size: 13px;
+	    font-weight: bold;
+	    color: #00457A;
+	    background-color: rgba(255, 255, 255, 0.8);
+	    padding: 2px 6px;
+	    border-radius: 4px;
+	    text-align: center;
+	}
+</style>
+
+<script>
+    const leafletConfig = {{ leaflet_config|safe }};
+    const map = L.map('map').setView(leafletConfig.DEFAULT_CENTER, leafletConfig.DEFAULT_ZOOM);
+
+    L.tileLayer(leafletConfig.TILES, {
+        attribution: leafletConfig.ATTRIBUTION_PREFIX
+    }).addTo(map);
+    
+    L.control.layers({
+        "OpenStreetMap": L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            attribution: "Map data &copy; <a href='https://openstreetmap.org'>OpenStreetMap</a> contributors"
+        }),
+        "Google Satellite": L.tileLayer("https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}", {
+            attribution: "Map data &copy; <a href='https://google.com'>Google Maps</a> contributors"
+        }),
+        "Google Maps": L.tileLayer("https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}", {
+            attribution: "Map data &copy; <a href='https://google.com'>Google Maps</a> contributors"
+        }),
+        "Google Terrain": L.tileLayer("https://mt1.google.com/vt/lyrs=p&x={x}&y={y}&z={z}", {
+            attribution: "Map data &copy; <a href='https://google.com'>Google Maps</a> contributors"
+        }),
+        "Google Hybrid": L.tileLayer("https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}", {
+            attribution: "Map data &copy; <a href='https://google.com'>Google Maps</a> contributors"
+        })
+    }, null, { position: 'bottomleft' }).addTo(map);
+
+    const geocoder = L.Control.geocoder({
+        position: 'topleft',
+        defaultMarkGeocode: false
+    }).on('markgeocode', function(e) {
+        const bbox = e.geocode.bbox;
+        const poly = L.polygon([
+            bbox.getSouthEast(),
+            bbox.getNorthEast(),
+            bbox.getNorthWest(),
+            bbox.getSouthWest()
+        ]).addTo(map);
+        map.fitBounds(poly.getBounds());
+    });
+
+    geocoder.addTo(map);
+
+    const devicesGeoJSON = {{ devices_geojson|safe }};
+    const zonesGeoJSON = {{ zones_geojson|safe }};
+
+    let zonesLayer = L.geoJSON(zonesGeoJSON, {
+        style: function (feature) {
+            return {
+                color: feature.properties.boundary_color || "#3388ff",
+                weight: 2,
+                opacity: 0.6,
+                fillColor: feature.properties.boundary_color || "#3388ff",
+                fillOpacity: 0.2
+            };
+        },
+        onEachFeature: function (feature, layer) {
+            const zoneInfo = `
+                <b>Zona:</b> ${feature.properties.name}<br>
+                <b>Cidade:</b> ${feature.properties.city}<br>
+                <b>Região:</b> ${feature.properties.region}<br>
+                <b>Bairro:</b> ${feature.properties.neighborhood}<br>
+                <b>Descrição:</b> ${feature.properties.description}
+            `;
+            layer.bindPopup(zoneInfo);
+
+            const label = L.divIcon({
+                className: 'zone-label',
+                html: `<div>${feature.properties.name}</div>`,
+                iconSize: [90, 20]
+            });
+
+            const bounds = layer.getBounds();
+            const topLeft = bounds.getNorthWest();
+
+            const labelMarker = L.marker(topLeft, { icon: label, interactive: false });
+            layer.on('add', () => map.addLayer(labelMarker));
+            layer.on('remove', () => map.removeLayer(labelMarker));
+        }
+    }).addTo(map);
+
+    const icons = {
+        OPERACIONAL: L.icon({
+            iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-blue.png',
+            iconSize: [25, 41],
+            iconAnchor: [12, 41],
+            popupAnchor: [1, -34],
+            shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
+            shadowSize: [41, 41]
+        }),
+        MANUTENCAO: L.icon({
+            iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-orange.png',
+            iconSize: [25, 41],
+            iconAnchor: [12, 41],
+            popupAnchor: [1, -34],
+            shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
+            shadowSize: [41, 41]
+        }),
+        FALHA: L.icon({
+            iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',
+            iconSize: [25, 41],
+            iconAnchor: [12, 41],
+            popupAnchor: [1, -34],
+            shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
+            shadowSize: [41, 41]
+        })
+    };
+
+    let devicesLayer;
+
+    function addDevicesToMap(type, operationalStatus) {
+        if (devicesLayer) {
+            map.removeLayer(devicesLayer);
+        }
+
+        devicesLayer = L.geoJSON(devicesGeoJSON, {
+            filter: function (feature) {
+                const matchesType = type === 'all' || feature.properties.type === type;
+                const matchesStatus = operationalStatus === 'all' || feature.properties.operational_status === operationalStatus;
+                return matchesType && matchesStatus;
+            },
+            pointToLayer: function (feature, latlng) {
+                const icon = icons[feature.properties.operational_status] || icons.DEFAULT;
+                return L.marker(latlng, { icon: icon });
+            },
+            onEachFeature: function (feature, layer) {
+                const popupContent = `
+                    <b>Dispositivo:</b> ${feature.properties.structural_name}<br>
+                    <b>Tipo:</b> ${feature.properties.type}<br>
+                    <b>Status:</b> ${feature.properties.operational_status}<br>
+                    <b>Altura:</b> ${feature.properties.height} m<br>
+                    <b>Material:</b> ${feature.properties.material}<br>
+                    <b>Instalado em:</b> ${feature.properties.installation_date}<br>
+                    <b>Zona:</b> ${feature.properties.zone_name}<br>
+                    <b>Fonte de Energia:</b> ${feature.properties.energy_source}<br>
+                    <b>Recursos:</b> ${feature.properties.additional_features}
+                `;
+                layer.bindPopup(popupContent);
+            }
+        }).addTo(map);
+    }
+
+    function toggleZones() {
+        const checkbox = document.getElementById('toggle-zones');
+        if (checkbox.checked) {
+            map.addLayer(zonesLayer);
+        } else {
+            map.removeLayer(zonesLayer);
+        }
+    }
+
+    function toggleDevices() {
+        const checkbox = document.getElementById('toggle-devices');
+        if (checkbox.checked) {
+            addDevicesToMap('all', 'all');
+        } else {
+            if (devicesLayer) {
+                map.removeLayer(devicesLayer);
+                devicesLayer = null;
+            }
+        }
+    }
+
+    function filterDevices() {
+        const type = document.getElementById('type-filter').value;
+        const operationalStatus = document.getElementById('status-filter').value;
+        addDevicesToMap(type, operationalStatus);
+    }
+
+    toggleZones();
+    toggleDevices();
+
+    map.on('mousemove', function (e) {
+        const coordsText = `Lat: ${e.latlng.lat.toFixed(5)}, Lng: ${e.latlng.lng.toFixed(5)}`;
+        document.getElementById('coords-text').textContent = coordsText;
+    });
+</script>
+
+{% endblock %}
