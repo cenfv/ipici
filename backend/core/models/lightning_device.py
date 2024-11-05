@@ -1,5 +1,7 @@
 from django.db import models
 from django.contrib.gis.db.models import PointField
+
+from core.models.address import Address
 from core.models.zone import Zone
 
 
@@ -39,6 +41,7 @@ class LightingDevice(models.Model):
     height = models.FloatField(verbose_name='Altura')
     material = models.CharField(max_length=100, verbose_name='Material')
     installation_date = models.DateField(verbose_name='Data de Instalação')
+    address = models.ForeignKey(Address, on_delete=models.CASCADE, related_name='devices', verbose_name='Endereço')
     location = PointField(verbose_name='Localização')
     device_image = models.ImageField(upload_to='devices/', blank=True, null=True, verbose_name='Imagem do dispositivo')
     operational_status = models.CharField(max_length=50, choices=STATUS_CHOICES, verbose_name='Status Operacional')

@@ -18,7 +18,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-#&^_')
 DEBUG = os.environ.get('DEBUG', True)
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost, 127.0.0.1').split(',')
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost, 127.0.0.1, 192.168.1.4').split(',')
 CSRF_TRUSTED_ORIGINS = os.environ.get('CSRF_TRUSTED_ORIGINS', 'http://localhost').split(',')
 CSRF_COOKIE_SECURE=False
 SESSION_COOKIE_SECURE=False
@@ -31,9 +31,6 @@ SECRET_KEY = 'django-insecure-99!&91x*nqh7x%92onlwm_dtio1c#!btm7w^e95!yy$uli7ww+
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
-
-ALLOWED_HOSTS = []
-
 
 # Application definition
 
@@ -121,6 +118,7 @@ JAZZMIN_SETTINGS = {
     },
     "hide_models": [
         "maps.mapdummy",
+        "core.Address",
     ],
     "custom_links": {
         "maps": [

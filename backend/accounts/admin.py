@@ -8,15 +8,15 @@ from django.utils.html import format_html
 class CustomUserAdmin(UserAdmin):
     add_form = CustomUserCreationForm
     model = CustomUser
-    list_display = ['email', 'full_name', 'country', 'status_badge', 'created_at']
-    list_filter = ['is_active', 'is_staff', 'country']
+    list_display = ['email', 'full_name', 'status_badge', 'created_at']
+    list_filter = ['is_active', 'is_staff', ]
     search_fields = ['email', 'first_name', 'last_name']
     ordering = ['-created_at']
 
     fieldsets = (
         ('Informações de Acesso', {'fields': ('email',)}),
         ('Informações Pessoais', {
-            'fields': ('first_name', 'last_name', 'birth_date', 'nationality', 'country', 'locality', 'phone',)
+            'fields': ('first_name', 'last_name', 'address', 'birth_date', 'phone',)
         }),
         ('Permissões', {'fields': ('is_active', 'is_staff', 'is_superuser')}),
     )
@@ -24,7 +24,7 @@ class CustomUserAdmin(UserAdmin):
     add_fieldsets = (
         (None, {
             'classes': ('wide',),
-            'fields': ( 'first_name', 'last_name', 'nationality', 'email', 'birth_date', 'country', 'locality', 'phone', 'is_staff', 'is_active'),
+            'fields': ( 'first_name', 'last_name', 'email', 'birth_date', 'phone', 'is_staff', 'is_active'),
         }),
     )
 

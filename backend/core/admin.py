@@ -5,7 +5,7 @@ from django.utils.html import format_html
 from .forms import ZoneAdminForm
 from .models import (
     AuditLog, Country, LightingDevice, Maintenance,
-    OperationalCost, ReportedProblem, Sensor, ServiceOrder, Zone, MailHistory
+    OperationalCost, ReportedProblem, Sensor, ServiceOrder, Zone, MailHistory, Address
 )
 from leaflet.admin import LeafletGeoAdmin
 
@@ -76,16 +76,22 @@ class SensorAdmin(admin.ModelAdmin):
     search_fields = ('device__number', 'sensor_status', 'connection_type', 'firmware_version')
     list_filter = ('sensor_status', 'connection_type')
 
+@admin.register(Address)
+class AddressAdmin(admin.ModelAdmin):
+    list_display = ('street', 'number', 'neighborhood', 'complement', 'city', 'state', 'country', 'zip_code')
+    search_fields = ('street', 'number', 'neighborhood', 'city', 'state', 'country__name', 'zip_code')
+    list_filter = ('state', 'country')
+
 
 @admin.register(LightingDevice)
 class LightingDeviceAdmin(LeafletGeoAdmin):
-    list_display = ('number', 'owner', 'structural_name', 'type', 'height', 'material', 'installation_date', 'operational_status', 'qr_code', 'energy_source', 'zone')
+    list_display = ('number', 'owner', 'structural_name', 'type', 'height', 'material', 'installation_date', 'operational_status', 'qr_code', 'energy_source', 'zone', 'address')
     search_fields = ('number', 'owner', 'structural_name', 'qr_code', 'energy_source')
-    list_filter = ('type', 'operational_status', 'zone')
+    list_filter = ('type', 'operational_status', 'zone', 'address')
     inlines = [MaintenanceInline, OperationalCostInline, SensorInline]
     fieldsets = (
         (None, {
-            'fields': ('number', 'owner', 'structural_name', 'type', 'height', 'material', 'installation_date', 'zone', 'location')
+            'fields': ('number', 'owner', 'structural_name', 'type', 'height', 'material', 'installation_date','address', 'zone', 'location')
         }),
         ('Operational Info', {
             'fields': ('operational_status', 'qr_code', 'energy_source', 'last_maintenance_date')

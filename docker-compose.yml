@@ -39,7 +39,7 @@ services:
     environment:
       - DEBUG=1
       - SECRET_KEY=django-insecure-whg8eyrugweryu83845438977gh
-      - ALLOWED_HOSTS=localhost, 127.0.0.1
+      - ALLOWED_HOSTS=localhost,127.0.0.1,192.168.1.4
       - BASE_URL=http://localhost:8000
       - DATABASE_ENGINE=postgresql
       - DATABASE_NAME=ipici

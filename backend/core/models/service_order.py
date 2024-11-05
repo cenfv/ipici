@@ -1,7 +1,8 @@
 from django.db import models
 from django.contrib.gis.db.models import PointField
 from accounts.models import CustomUser
-from core.models import LightingDevice, ReportedProblem
+from core.models import LightingDevice
+from core.models.reported_problem import ReportedProblem
 
 
 class ServiceOrder(models.Model):

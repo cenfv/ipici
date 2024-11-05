@@ -42,6 +42,14 @@
 
 <div id="map-container" style="position: relative; width: 100%; height: 80vh;">
     <div id="map" style="width: 100%; height: 100%;"></div>
+	
+	 <div id="device-details" style="display: none;">
+        <div id="device-info">Clique em um dispositivo no mapa para ver detalhes.</div>
+    </div>
+
+    <div id="coordinates" style="position: absolute; bottom: 10px; left: 80px; background-color: rgba(255, 255, 255, 0.8); padding: 5px 10px; border-radius: 4px; font-size: 14px; z-index: 999">
+        Coordenadas: <span id="coords-text">Passe o mouse sobre o mapa</span>
+    </div>
 </div>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
@@ -86,32 +94,71 @@
         left: 0;
     }
 
-     #order-details {
-        position: absolute;
-        top: 0px;
-        right: 0;
-        width: 25%;
-        height: calc(100% - 20px);
-        background-color: rgba(255, 255, 255, 0.95);
-        padding: 0;
-        box-shadow: -3px 0px 10px rgba(0, 0, 0, 0.3);
-        overflow-y: auto;
-        z-index: 1000;
-        border-radius: 8px 0 0 8px;
-        transition: 0.3s ease;
-        font-family: Arial, sans-serif;
-        color: #333;
-    }
+     #device-details {
+	    position: absolute;
+	    top: 0px;
+	    right: 0;
+	    width: 25%;
+	    height: calc(100% - 20px);
+	    background-color: rgba(255, 255, 255, 0.95);
+	    padding: 0;
+	    box-shadow: -3px 0px 10px rgba(0, 0, 0, 0.3);
+	    overflow-y: auto;
+	    z-index: 1000;
+	    border-radius: 8px 0 0 8px;
+	    transition: 0.3s ease;
+	    font-family: Arial, sans-serif;
+	    color: #333;
+	}
 
-    #order-header {
-        background-color: #00457A;
-        color: #fff;
-        text-align: center;
-        padding: 15px;
-        font-size: 18px;
-        font-weight: bold;
-        border-top-left-radius: 8px;
-    }
+	#device-header {
+	    background-color: #00457A;
+	    color: #fff;
+	    text-align: center;
+	    padding: 15px;
+	    font-size: 18px;
+	    font-weight: bold;
+	    border-top-left-radius: 8px;
+	}
+	
+	#device-details button {
+	    background: none;
+	    border: none;
+	    color: #fff;
+	    font-size: 18px;
+	    font-weight: bold;
+	    cursor: pointer;
+	    position: absolute;
+	    top: 10px;
+	    right: 10px;
+	    transition: color 0.2s;
+	}
+	
+	#device-details button:hover {
+	    color: #ddd;
+	}
+	
+	#device-details img {
+	    width: 100%;
+	    height: 300px;
+	    border-radius: 0 0 8px 8px;
+	    margin-bottom: 10px;
+	    object-fit: cover;
+	}
+	
+	#device-content {
+	    padding: 20px;
+	}
+	
+	#device-content p {
+	    margin: 8px 0;
+	    line-height: 1.4;
+	    font-size: 14px;
+	}
+	
+	#device-content p b {
+	    color: #0056b3;
+	}
 
     #order-details button {
         background: none;
@@ -179,7 +226,7 @@
     L.tileLayer(leafletConfig.TILES, {
         attribution: leafletConfig.ATTRIBUTION_PREFIX
     }).addTo(map);
-    
+
     L.control.layers({
         "OpenStreetMap": L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
             attribution: "Map data &copy; <a href='https://openstreetmap.org'>OpenStreetMap</a> contributors"
@@ -281,6 +328,35 @@
 
     let devicesLayer;
 
+    function showDeviceDetails(device) {
+        const defaultImage = 'https://via.placeholder.com/300x200?text=Sem+Imagem';
+        const imageUrl = device.device_image || defaultImage;
+
+        document.getElementById('device-info').innerHTML = `
+            <div id="device-header">Detalhes do Dispositivo</div>
+            <button onclick="document.getElementById('device-details').style.display = 'none'">✕</button>
+            <div id="device-content">
+                <h3>Dispositivo nº ${device.number}</h3>
+                <p><b>Tipo:</b> ${device.type}</p>
+                <p><b>Denominação Estrutural:</b> ${device.structural_name}</p>
+                <p><b>Status Operacional:</b> ${device.operational_status}</p>
+                <p><b>Localização:</b> ${device.address}</p>
+                <p><b>Zona:</b> ${device.zone_name}</p>
+                <p><b>Coordenadas:</b> ${device.location}</p>
+                <p><b>Instalações Próximas:</b> ${device.nearby_installations}</p>
+                <p><b>Proprietário:</b> ${device.owner}</p>
+                <p><b>Altura:</b> ${device.height} m</p>
+                <p><b>Material:</b> ${device.material}</p>
+                <p><b>Data de Instalação:</b> ${device.installation_date}</p>
+                <p><b>Data da Última Manutenção:</b> ${device.last_maintenance_date}</p>
+                <p><b>Fonte de Energia:</b> ${device.energy_source}</p>
+                <p><b>Recursos Adicionais:</b> ${device.additional_features || "N/A"}</p>
+                <img src="${imageUrl}" alt="Imagem do Dispositivo">
+            </div>
+        `;
+        document.getElementById('device-details').style.display = 'block';
+    }
+
     function addDevicesToMap(type, operationalStatus) {
         if (devicesLayer) {
             map.removeLayer(devicesLayer);
@@ -297,18 +373,31 @@
                 return L.marker(latlng, { icon: icon });
             },
             onEachFeature: function (feature, layer) {
-                const popupContent = `
-                    <b>Dispositivo:</b> ${feature.properties.structural_name}<br>
-                    <b>Tipo:</b> ${feature.properties.type}<br>
-                    <b>Status:</b> ${feature.properties.operational_status}<br>
-                    <b>Altura:</b> ${feature.properties.height} m<br>
-                    <b>Material:</b> ${feature.properties.material}<br>
-                    <b>Instalado em:</b> ${feature.properties.installation_date}<br>
-                    <b>Zona:</b> ${feature.properties.zone_name}<br>
-                    <b>Fonte de Energia:</b> ${feature.properties.energy_source}<br>
-                    <b>Recursos:</b> ${feature.properties.additional_features}
-                `;
-                layer.bindPopup(popupContent);
+                const deviceData = {
+                    number: feature.properties.number,
+                    owner: feature.properties.owner,
+                    structural_name: feature.properties.structural_name,
+                    type: feature.properties.type,
+                    height: feature.properties.height,
+                    material: feature.properties.material,
+                    installation_date: feature.properties.installation_date,
+                    operational_status: feature.properties.operational_status,
+                    qr_code: feature.properties.qr_code,
+                    energy_source: feature.properties.energy_source,
+                    zone_name: feature.properties.zone_name,
+                    additional_features: feature.properties.additional_features,
+                    device_image: feature.properties.device_image || null,
+	                address: feature.properties.address,
+	                location: `${feature.geometry.coordinates[1]}, ${feature.geometry.coordinates[0]}`,
+	                nearby_installations: feature.properties.nearby_installations,
+	                last_maintenance_date: feature.properties.last_maintenance_date,
+
+                };
+
+                layer.bindPopup(`<b>Dispositivo:</b> ${deviceData.number}<br><b>Tipo:</b> ${deviceData.type}<br><b>Status:</b> ${deviceData.operational_status}`);
+                layer.on('click', function() {
+                    showDeviceDetails(deviceData);
+                });
             }
         }).addTo(map);
     }
@@ -348,5 +437,7 @@
         document.getElementById('coords-text').textContent = coordsText;
     });
 </script>
+
+
 
 {% endblock %}

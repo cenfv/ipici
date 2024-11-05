@@ -15,16 +15,14 @@ from core.models.country import Country
 logger = logging.getLogger()
 
 class CustomUserManager(BaseUserManager):
-    def create_user(self, email, password=None, birth_date=None, country=None, **extra_fields):
+    def create_user(self, email, password=None, birth_date=None, **extra_fields):
         if not email:
             raise ValueError('O endereço de e-mail deve ser fornecido')
         if not birth_date:
             raise ValueError('A data de nascimento deve ser fornecida')
-        if not country:
-            raise ValueError('O país deve ser fornecido')
 
         email = self.normalize_email(email)
-        user = self.model(email=email, birth_date=birth_date, country=country, **extra_fields)
+        user = self.model(email=email, birth_date=birth_date, **extra_fields)
         user.set_password(password) if password else user.set_unusable_password()
         user.save(using=self._db)
 
@@ -65,9 +63,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(unique=True, verbose_name='e-mail')
     first_name = models.CharField(max_length=30, blank=True, verbose_name='Nome')
     last_name = models.CharField(max_length=30, blank=True, verbose_name='Sobrenome')
-    nationality = models.CharField(max_length=100, verbose_name='Nacionalidade')
-    country = models.ForeignKey(Country, on_delete=models.CASCADE, related_name='user_country', verbose_name='País')
-    locality = models.CharField(max_length=100, verbose_name='Localidade')
+    address = models.ForeignKey('core.Address', on_delete=models.SET_NULL, related_name='users', verbose_name='Endereço', null=True, blank=True)
     phone = models.CharField(max_length=100, verbose_name='Telefone')
     birth_date = models.DateField(max_length=100, verbose_name='Data de Nascimento')
     # user_info = models.OneToOneField(UserInfo, on_delete=models.CASCADE, related_name='user_info', verbose_name='Informações do Usuário', null=True, blank=True)

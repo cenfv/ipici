@@ -1,13 +1,16 @@
-from django.conf import settings
-from django.shortcuts import render
-from core.models import ServiceOrder, Zone, LightingDevice  # Import Zone model
-from django.contrib.admin.views.decorators import staff_member_required
+
+from core.models import ServiceOrder, Zone, LightingDevice
 from django.contrib import admin
-from django.db.models import F, Value
-from django.db.models.functions import Concat
-import json
+from django.db.models import F
 from django.http import JsonResponse
 from django.core.serializers import serialize
+from django.db.models import Value
+from django.db.models.functions import Concat
+from django.contrib.admin.views.decorators import staff_member_required
+from django.shortcuts import render
+from django.conf import settings
+import json
+
 
 def get_zone_geometry(request, zone_id):
     zone = Zone.objects.filter(id=zone_id)
@@ -87,21 +90,19 @@ def service_order_map_view(request):
     return render(request, 'admin/service_order_map.html', context)
 
 
-from django.db.models import Value
-from django.db.models.functions import Concat
-from django.contrib.admin.views.decorators import staff_member_required
-from django.shortcuts import render
-from django.conf import settings
-import json
-
 @staff_member_required
 def device_map_view(request):
     all_devices = LightingDevice.objects.annotate(
-        zone_name=Concat(Value('Zona: '), 'zone__name'),
+        zone_name=Concat(Value('Zona: '), F('zone__name')),
+        full_address=Concat(
+            F('address__street'), Value(', '), F('address__number'), Value(' - '),
+            F('address__city'), Value(', '), F('address__state'), Value(', '),
+            F('address__country__name')
+        ),
     ).values(
         'number', 'owner', 'structural_name', 'type', 'height', 'material',
         'installation_date', 'location', 'device_image', 'operational_status',
-        'qr_code', 'energy_source', 'zone_name', 'additional_features'
+        'qr_code', 'energy_source', 'zone_name', 'additional_features','nearby_installations', 'full_address', 'last_maintenance_date'
     )
 
     devices_geojson = {
@@ -124,8 +125,12 @@ def device_map_view(request):
                 "operational_status": device['operational_status'],
                 "qr_code": device['qr_code'],
                 "energy_source": device['energy_source'],
-                "zone_name": device['zone_name'] or "Zona desconhecida",
-                "additional_features": device['additional_features'] or "Sem recursos adicionais"
+                "zone_name": device['zone_name'] or "Não informado",
+                "additional_features": device['additional_features'] or "Não informado",
+                "address": device['full_address'] or "Não informado",
+                "device_image": f'{settings.BASE_URL}/media/{device['device_image']}' if device['device_image'] else None,
+                'nearby_installations': device['nearby_installations'] or "Não informado",
+                'last_maintenance_date': device['last_maintenance_date'].strftime('%Y-%m-%d') if device['last_maintenance_date'] else "Não informado"
             }
         }
         devices_geojson["features"].append(feature)
