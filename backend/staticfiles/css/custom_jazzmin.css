@@ -84,6 +84,10 @@
     color: #b0bec5;
 }
 
-
+.login-logo img {
+    margin-top: -100px;
+    max-width: 300px;
+    height: auto;
+}
 
 
