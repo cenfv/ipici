@@ -1,14 +1,25 @@
-import React, { useEffect, useState } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, Modal } from 'react-native';
+import React, { useEffect, useState, useRef } from 'react';
+import { StyleSheet, View, Text, TouchableOpacity, Modal, FlatList, SafeAreaView } from 'react-native';
 import MapView, { Marker, Polygon } from 'react-native-maps';
 import axios from 'axios';
-import { FontAwesome } from '@expo/vector-icons';
+import { FontAwesome, MaterialIcons } from '@expo/vector-icons';
 import { LightingDevice, LocationType } from '../types/types';
 
-const MapScreen: React.FC = () => {
+const mapTypes: { label: string, value: 'standard' | 'satellite' | 'hybrid' | 'terrain' }[] = [
+  { label: 'Padrão', value: 'standard' },
+  { label: 'Satélite', value: 'satellite' },
+  { label: 'Híbrido', value: 'hybrid' },
+  { label: 'Terreno', value: 'terrain' },
+];
+
+const MapDevices: React.FC = () => {
   const [devices, setDevices] = useState<LightingDevice[]>([]);
   const [selectedDevice, setSelectedDevice] = useState<LightingDevice | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
+  const [mapType, setMapType] = useState<'standard' | 'satellite' | 'hybrid' | 'terrain'>('standard');
+  const [mapTypeMenuVisible, setMapTypeMenuVisible] = useState(false);
+
+  const mapRef = useRef<MapView>(null);
 
   const fetchDevices = async () => {
     try {
@@ -53,10 +64,17 @@ const MapScreen: React.FC = () => {
     setModalVisible(false);
   };
 
+  const changeMapType = (type: 'standard' | 'satellite' | 'hybrid' | 'terrain') => {
+    setMapType(type);
+    setMapTypeMenuVisible(false);
+  };
+
   return (
     <View style={styles.container}>
       <MapView
+        ref={mapRef}
         style={styles.map}
+        mapType={mapType}
         initialRegion={{
           latitude: -23.185391,
           longitude: -50.648520,
@@ -87,6 +105,33 @@ const MapScreen: React.FC = () => {
           );
         })}
       </MapView>
+      <SafeAreaView style={styles.safeAreaView}>
+        <TouchableOpacity style={styles.mapTypeButton} onPress={() => setMapTypeMenuVisible(true)}>
+          <MaterialIcons name="layers" size={28} color="#333" />
+        </TouchableOpacity>
+      </SafeAreaView>
+
+      <Modal
+        visible={mapTypeMenuVisible}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setMapTypeMenuVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <Text style={styles.modalTitle}>Selecione o Tipo de Mapa</Text>
+            <FlatList
+              data={mapTypes}
+              keyExtractor={(item) => item.value}
+              renderItem={({ item }) => (
+                <TouchableOpacity style={styles.optionButton} onPress={() => changeMapType(item.value)}>
+                  <Text style={styles.optionButtonText}>{item.label}</Text>
+                </TouchableOpacity>
+              )}
+            />
+          </View>
+        </View>
+      </Modal>
 
       {selectedDevice && (
         <Modal
@@ -95,7 +140,7 @@ const MapScreen: React.FC = () => {
           animationType="slide"
           onRequestClose={closeModal}
         >
-          <View style={styles.modalOverlay}>
+	  <View style={styles.modalOverlay}>
             <View style={styles.modalContainer}>
               <Text style={styles.modalTitle}>Detalhes do Dispositivo</Text>
 
@@ -128,9 +173,8 @@ const MapScreen: React.FC = () => {
                 <FontAwesome name="times" size={16} color="#FFF" style={styles.buttonIcon} />
                 <Text style={styles.closeButtonText}>Fechar</Text>
               </TouchableOpacity>
-
             </View>
-          </View>
+          </View>	
         </Modal>
       )}
     </View>
@@ -138,12 +182,25 @@ const MapScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
+  container: { flex: 1 },
+  map: { width: '100%', height: '100%' },
+  safeAreaView: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
   },
-  map: {
-    width: '100%',
-    height: '100%',
+  mapTypeButton: {
+    marginTop: 10,
+    marginRight: 4,
+    padding: 10,
+    backgroundColor: '#FFF',
+    borderRadius: 25,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
   },
   modalOverlay: {
     flex: 1,
@@ -169,6 +226,14 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     textAlign: 'center',
   },
+  optionButton: {
+    padding: 12,
+    backgroundColor: '#1B68AC',
+    marginVertical: 5,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  optionButtonText: { color: '#FFF', fontWeight: 'bold' },
   infoRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -212,4 +277,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default MapScreen;
+export default MapDevices;

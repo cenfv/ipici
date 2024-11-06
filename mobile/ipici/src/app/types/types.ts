@@ -31,3 +31,8 @@ export type LightingDevice = {
   operational_status: string;
   type: string;
 };
+
+export type RootStackParamList = {
+  Login: undefined;
+  PasswordRecovery: undefined;
+};
