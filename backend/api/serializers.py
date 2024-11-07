@@ -1,7 +1,8 @@
 from rest_framework import serializers
 
 from accounts.models import CustomUser
-from core.models import LightingDevice, Zone, Address
+from core.models import LightingDevice, Zone, Address, ReportedProblem
+
 
 class AddressSerializer(serializers.ModelSerializer):
     class Meta:
@@ -54,6 +55,20 @@ class CustomUserSerializer(serializers.ModelSerializer):
 
         return super().update(instance, validated_data)
 
+class ReportedProblemSerializer(serializers.ModelSerializer):
+    user = serializers.PrimaryKeyRelatedField(queryset=CustomUser.objects.all(), required=False)
+    device = serializers.PrimaryKeyRelatedField(queryset=LightingDevice.objects.all())
+
+    class Meta:
+        model = ReportedProblem
+        fields = ['id', 'user', 'device', 'description', 'report_date', 'image', 'status']
+        read_only_fields = ['report_date', 'user']
+
+    def create(self, validated_data):
+        device = validated_data.get('device')
+        validated_data['device'] = device
+        return super().create(validated_data)
+
 class PasswordResetRequestSerializer(serializers.Serializer):
     email = serializers.EmailField()
 
@@ -73,5 +88,6 @@ class SetPasswordSerializer(serializers.Serializer):
     def save(self, **kwargs):
         self.user.set_password(self.validated_data['new_password'])
         self.user.save()
+
 
 

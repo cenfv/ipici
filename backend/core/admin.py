@@ -65,9 +65,9 @@ class OperationalCostAdmin(admin.ModelAdmin):
 
 @admin.register(ReportedProblem)
 class ReportedProblemAdmin(admin.ModelAdmin):
-    list_display = ('user', 'device', 'status', 'report_date', 'description', 'image')
+    list_display = ('user', 'device', 'status', 'report_date', 'description', 'image', 'origin')
     search_fields = ('user__email', 'device__number', 'status', 'description')
-    list_filter = ('status', 'report_date')
+    list_filter = ('status', 'report_date', 'origin')
 
 
 @admin.register(Sensor)
@@ -117,9 +117,9 @@ class LightingDeviceAdmin(LeafletGeoAdmin):
 
 @admin.register(ServiceOrder)
 class ServiceOrderAdmin(LeafletGeoAdmin):
-    list_display = ('title', 'priority', 'status', 'responsible', 'author', 'creation_date', 'origin', 'problem_type', 'device')
+    list_display = ('title', 'priority', 'status', 'responsible', 'author', 'creation_date', 'problem_type', 'device')
     search_fields = ('title', 'description', 'responsible__email', 'author__email', 'device__number', 'problem_type')
-    list_filter = ('priority', 'status', 'origin', 'creation_date')
+    list_filter = ('priority', 'status', 'creation_date')
     fieldsets = (
         (None, {
             'fields': ('title', 'description', 'priority', 'location')
@@ -128,7 +128,7 @@ class ServiceOrderAdmin(LeafletGeoAdmin):
             'fields': ('status', 'responsible', 'author')
         }),
         ('Device Information', {
-            'fields': ('device_image', 'device', 'problem_type', 'origin', 'reported_problems')
+            'fields': ('device_image', 'device', 'problem_type', 'reported_problems')
         }),
     )
 

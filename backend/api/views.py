@@ -13,9 +13,9 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from api.serializers import CustomUserSerializer, LightingDeviceSerializer, PasswordResetRequestSerializer, \
-    SetPasswordSerializer
+    SetPasswordSerializer, ReportedProblemSerializer
 from core.mailers.user_account_mailer import PasswordResetMailer
-from core.models import LightingDevice
+from core.models import LightingDevice, ReportedProblem
 
 
 class UserListCreateView(ListCreateAPIView):
@@ -65,6 +65,31 @@ class LightingDeviceDetailView(APIView):
             return Response({"error": "Device not found"}, status=status.HTTP_404_NOT_FOUND)
         serializer = LightingDeviceSerializer(device)
         return Response(serializer.data)
+
+class ReportedProblemListCreateView(ListCreateAPIView):
+    queryset = ReportedProblem.objects.all()
+    serializer_class = ReportedProblemSerializer
+    permission_classes = [IsAuthenticated]
+
+    def perform_create(self, serializer):
+        user = self.request.user if self.request.user.is_authenticated else None
+
+        if user:
+            if user.is_administrator:
+                origin = 'ADMINISTRADOR'
+            elif user.is_employee:
+                origin = 'FUNCIONARIO'
+            else:
+                origin = 'CIDADAO'
+        else:
+            origin = 'SENSOR'
+
+        serializer.save(user=user, origin=origin)
+
+class ReportedProblemDetailView(RetrieveUpdateDestroyAPIView):
+    queryset = ReportedProblem.objects.all()
+    serializer_class = ReportedProblemSerializer
+    permission_classes = [IsAuthenticated]
 
 class PasswordResetRequestView(GenericAPIView):
     serializer_class = PasswordResetRequestSerializer

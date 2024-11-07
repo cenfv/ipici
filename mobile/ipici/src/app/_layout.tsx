@@ -50,6 +50,10 @@ function RootLayoutNav() {
           name="AuthLoadingScreen/index"
           options={{ headerShown: false }}
         />
+         <Stack.Screen
+          name="ReportProblemScreen/index"
+          options={{ headerShown: false }}
+        />
         <Stack.Screen
           name="(tabs)"
           options={{ headerShown: false }}

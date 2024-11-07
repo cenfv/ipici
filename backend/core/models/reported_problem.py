@@ -10,7 +10,14 @@ class ReportedProblem(models.Model):
         ('EM_ANALISE', 'Em Análise'),
         ('RESOLVIDO', 'Resolvido'),
     ]
-    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='reported_problems', verbose_name='Usuário')
+    ORIGIN_CHOICES = [
+        ('CIDADAO', 'Cidadão'),
+        ('SENSOR', 'Sensor'),
+        ('ADMINISTRADOR', 'Administrador'),
+        ('FUNCIONARIO', 'Funcionário'),
+    ]
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='reported_problems', verbose_name='Usuário', null=True)
+    origin = models.CharField(max_length=15, choices=ORIGIN_CHOICES, verbose_name='Origem', default='CIDADAO')
     device = models.ForeignKey(LightingDevice, on_delete=models.CASCADE, related_name='problems', verbose_name='Dispositivo')
     description = models.TextField(verbose_name='Descrição')
     report_date = models.DateTimeField(auto_now_add=True, verbose_name='Data do Relato')

@@ -4,6 +4,8 @@ import MapView, { Marker, Polygon } from 'react-native-maps';
 import axios from 'axios';
 import { FontAwesome, MaterialIcons } from '@expo/vector-icons';
 import { LightingDevice, LocationType } from '../types/types';
+import { useRouter } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const mapTypes: { label: string, value: 'standard' | 'satellite' | 'hybrid' | 'terrain' }[] = [
   { label: 'Padrão', value: 'standard' },
@@ -20,12 +22,28 @@ const MapDevices: React.FC = () => {
   const [mapTypeMenuVisible, setMapTypeMenuVisible] = useState(false);
 
   const mapRef = useRef<MapView>(null);
+  const router = useRouter();
+
+  const openReportProblemScreen = async () => {
+    const token = await AsyncStorage.getItem('access_token');
+
+    if (!selectedDevice) return;
+    router.push({
+      pathname: '/ReportProblemScreen',
+      params: {
+        device: selectedDevice.id,
+        token: token,
+      },
+    });
+  }
 
   const fetchDevices = async () => {
+    const token = await AsyncStorage.getItem('access_token');
+
     try {
       const response = await axios.get<LightingDevice[]>('http://192.168.1.4:8000/api/devices/', {
         headers: {
-          Authorization: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzM1OTk3MDUwLCJpYXQiOjE3MzA4MTMwNTAsImp0aSI6Ijk4MTBjMzcxY2FiYjQ5N2U5NzVhMWMxOGE3NTBiZGRjIiwidXNlcl9pZCI6MX0.epoHJRipUrxFl8cCJjpaaJoReJhdxlMJQeWgbT7Ormk',
+          Authorization: `Bearer ${token}`,
         },
       });
       if (Array.isArray(response.data)) {
@@ -173,7 +191,7 @@ const MapDevices: React.FC = () => {
                 <Text style={styles.infoText}>Endereço: {selectedDevice.address.street}, {selectedDevice.address.number}</Text>
               </View>
 
-              <TouchableOpacity style={styles.reportButton} onPress={() => alert("Reportar problema")}>
+              <TouchableOpacity style={styles.reportButton} onPress={openReportProblemScreen} >
                 <FontAwesome name="exclamation-triangle" size={16} color="#FFF" style={styles.buttonIcon} />
                 <Text style={styles.reportButtonText}>Relatar Problema</Text>
               </TouchableOpacity>

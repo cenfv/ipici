@@ -16,11 +16,7 @@ class ServiceOrder(models.Model):
         ('EM_ANDAMENTO', 'Em Andamento'),
         ('CONCLUIDA', 'Concluída'),
     ]
-    ORIGIN_CHOICES = [
-        ('CIDADAO', 'Cidadão'),
-        ('SENSOR', 'Sensor'),
-        ('ADMINISTRADOR', 'Administrador'),
-    ]
+
     title = models.CharField(max_length=100, verbose_name='Título')
     description = models.TextField(verbose_name='Descrição')
     creation_date = models.DateTimeField(auto_now_add=True, verbose_name='Data de Criação')
@@ -32,7 +28,6 @@ class ServiceOrder(models.Model):
     device_image = models.ImageField(upload_to='orders/', blank=True, null=True, verbose_name='Imagem do Dispositivo')
     device = models.ForeignKey(LightingDevice, on_delete=models.CASCADE, related_name='service_orders', verbose_name='Dispositivo')
     problem_type = models.CharField(max_length=100, verbose_name='Tipo de Problema')
-    origin = models.CharField(max_length=15, choices=ORIGIN_CHOICES, verbose_name='Origem')
     reported_problems = models.ManyToManyField(ReportedProblem, related_name='service_orders', verbose_name='Problemas Relatados', blank=True)
 
     class Meta:
