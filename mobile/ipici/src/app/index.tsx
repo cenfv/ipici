@@ -41,7 +41,7 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
       await AsyncStorage.setItem('refresh_token', response.data.refresh);
 
       setMessage({ type: 'success', text: 'Login realizado com sucesso!' });
-      router.push({ pathname: '/(tabs)/MapDevices' });
+      router.push({ pathname: '/(tabs)/MapDevices', params: {} });
     } catch (error) {
       console.error('Erro ao fazer login:', error);
       setMessage({ type: 'error', text: 'Falha ao realizar login. Verifique suas credenciais.' });
@@ -51,11 +51,11 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
   };
 
   const handlePasswordRecovery = () => {
-    router.push({ pathname: '/PasswordRecovery' });
+    router.push({ pathname: '/PasswordRecovery', params: {} });
   };
 
   const handleRegister = () => {
-    router.push({ pathname: '/Register' });
+    router.push({ pathname: '/Register', params: {} });
   };
 
   const validateEmail = (text: string) => {
@@ -142,7 +142,7 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
 const styles = StyleSheet.create({
   background: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#ffffff',
   },
   container: {
     flex: 1,
@@ -174,7 +174,7 @@ const styles = StyleSheet.create({
     color: 'green',
   },
   input: {
-    marginBottom: 10,
+    marginBottom: 2,
   },
   forgotPasswordText: {
     color: '#1B68AC',

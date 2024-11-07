@@ -21,13 +21,35 @@ from core.models import LightingDevice
 class UserListCreateView(ListCreateAPIView):
     queryset = CustomUser.objects.all()
     serializer_class = CustomUserSerializer
-    permission_classes = [IsAuthenticated]
-    pagination_class = None
+    permission_classes = [AllowAny]
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            user = serializer.save()
+            return Response({
+                "message": "Usuário registrado com sucesso! E-mail para definição de senha enviado.",
+                "user": {
+                    "id": user.id,
+                    "email": user.email,
+                    "full_name": user.get_full_name(),
+                    "role": user.role
+                }
+            }, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class UserDetailView(RetrieveUpdateDestroyAPIView):
     queryset = CustomUser.objects.all()
     serializer_class = CustomUserSerializer
     permission_classes = [IsAuthenticated]
+
+class UserMeView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        serializer = CustomUserSerializer(user)
+        return Response(serializer.data)
 
 class LightingDeviceListView(APIView):
     def get(self, request):
@@ -56,8 +78,8 @@ class PasswordResetRequestView(GenericAPIView):
             if user:
                 token = default_token_generator.make_token(user)
                 uid = urlsafe_base64_encode(force_bytes(user.pk))
-                reset_url = "/reset-password/" + uid + "/" + token + "/"
-                reset_link = urljoin(settings.PORTAL_URL, reset_url)
+                reset_url = "/user/reset/" + uid + "/" + token + "/"
+                reset_link = urljoin(settings.BASE_URL, reset_url)
 
                 password_reset_mailer = PasswordResetMailer([email], reset_link)
                 password_reset_mailer.send()

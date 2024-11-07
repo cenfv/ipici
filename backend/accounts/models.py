@@ -28,8 +28,8 @@ class CustomUserManager(BaseUserManager):
 
         token = default_token_generator.make_token(user)
         uid = urlsafe_base64_encode(force_bytes(user.pk))
-        reset_url = "/reset-password/" + uid + "/" + token + "/"
-        reset_link = urljoin(settings.PORTAL_URL, reset_url)
+        reset_url = "/user/reset/" + uid + "/" + token + "/"
+        reset_link = urljoin(settings.BASE_URL, reset_url)
 
         welcome_mailer = WelcomeMailer([email], reset_link)
         welcome_mailer.send()
@@ -60,6 +60,11 @@ class CustomUserManager(BaseUserManager):
 #         return self.specialty.name
 
 class CustomUser(AbstractBaseUser, PermissionsMixin):
+    class RoleChoices(models.TextChoices):
+        ADMINISTRATOR = 'admin', 'Administrador'
+        EMPLOYEE = 'employee', 'Funcionário'
+        REGULAR_USER = 'user', 'Usuário'
+
     email = models.EmailField(unique=True, verbose_name='e-mail')
     first_name = models.CharField(max_length=30, blank=True, verbose_name='Nome')
     last_name = models.CharField(max_length=30, blank=True, verbose_name='Sobrenome')
@@ -67,6 +72,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     phone = models.CharField(max_length=100, verbose_name='Telefone')
     birth_date = models.DateField(max_length=100, verbose_name='Data de Nascimento')
     # user_info = models.OneToOneField(UserInfo, on_delete=models.CASCADE, related_name='user_info', verbose_name='Informações do Usuário', null=True, blank=True)
+    role = models.CharField(max_length=10, choices=RoleChoices.choices, default=RoleChoices.REGULAR_USER, verbose_name='Cargo')
 
     is_active = models.BooleanField(default=True, verbose_name='Ativo')
     is_staff = models.BooleanField(default=False, verbose_name='Usuário Interno')
@@ -96,3 +102,19 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
         if self.first_name:
             return f'{self.first_name} {self.last_name}'
         return self.email
+
+    @property
+    def full_name(self):
+        return self.get_full_name()
+
+    @property
+    def is_administrator(self):
+        return self.role == self.RoleChoices.ADMINISTRATOR
+
+    @property
+    def is_employee(self):
+        return self.role == self.RoleChoices.EMPLOYEE
+
+    @property
+    def is_regular_user(self):
+        return self.role == self.RoleChoices.REGULAR_USER

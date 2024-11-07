@@ -4,8 +4,8 @@ from drf_spectacular.views import (SpectacularAPIView, SpectacularRedocView,
                                    SpectacularSwaggerView)
 from rest_framework_simplejwt.views import TokenObtainPairView,TokenVerifyView
 
-from api.views import UserListCreateView, PasswordResetRequestView, UserDetailView, PasswordResetTokenValidationView, \
-    PasswordResetConfirmView, LightingDeviceListView, LightingDeviceDetailView
+from api.views import UserListCreateView, PasswordResetRequestView, PasswordResetTokenValidationView, \
+    PasswordResetConfirmView, LightingDeviceListView, LightingDeviceDetailView, UserDetailView, UserMeView
 
 router = DefaultRouter()
 
@@ -15,6 +15,7 @@ urlpatterns = [
     path('auth/verify/', TokenVerifyView.as_view(), name='auth_verify'),
     path('users/', UserListCreateView.as_view(), name='user-list-create'),
     path('users/<int:pk>/', UserDetailView.as_view(), name='user-detail'),
+    path('users/me/', UserMeView.as_view(), name='user-me'),
     path('user/password_reset_request/', PasswordResetRequestView.as_view(), name='password_reset_request'),
     path('user/reset/<uidb64>/<token>/', PasswordResetConfirmView.as_view(), name='password_reset_confirm'),
     path('user/reset/<uidb64>/<token>/validate/', PasswordResetTokenValidationView.as_view(),

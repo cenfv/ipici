@@ -128,7 +128,7 @@ def device_map_view(request):
                 "zone_name": device['zone_name'] or "Não informado",
                 "additional_features": device['additional_features'] or "Não informado",
                 "address": device['full_address'] or "Não informado",
-                "device_image": f'{settings.BASE_URL}/media/{device['device_image']}' if device['device_image'] else None,
+                "device_image": f"{settings.BASE_URL}/media/{device['device_image']}" if device["device_image"] else None,
                 'nearby_installations': device['nearby_installations'] or "Não informado",
                 'last_maintenance_date': device['last_maintenance_date'].strftime('%Y-%m-%d') if device['last_maintenance_date'] else "Não informado"
             }

@@ -9,12 +9,12 @@ class CustomUserAdmin(UserAdmin):
     add_form = CustomUserCreationForm
     model = CustomUser
     list_display = ['email', 'full_name', 'status_badge', 'created_at']
-    list_filter = ['is_active', 'is_staff', ]
+    list_filter = ['is_active', 'is_staff', 'role' ]
     search_fields = ['email', 'first_name', 'last_name']
     ordering = ['-created_at']
 
     fieldsets = (
-        ('Informações de Acesso', {'fields': ('email',)}),
+        ('Informações de Acesso', {'fields': ('email', 'role')}),
         ('Informações Pessoais', {
             'fields': ('first_name', 'last_name', 'address', 'birth_date', 'phone',)
         }),
@@ -24,7 +24,7 @@ class CustomUserAdmin(UserAdmin):
     add_fieldsets = (
         (None, {
             'classes': ('wide',),
-            'fields': ( 'first_name', 'last_name', 'email', 'birth_date', 'phone', 'is_staff', 'is_active'),
+            'fields': ( 'first_name', 'last_name', 'email', 'birth_date', 'phone', 'role', 'is_staff', 'is_active'),
         }),
     )
 

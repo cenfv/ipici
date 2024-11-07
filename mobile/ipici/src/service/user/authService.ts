@@ -10,3 +10,4 @@ export async function login(credentials: Auth): Promise<AuthResponse> {
     data: response.data,
   }
 }
+

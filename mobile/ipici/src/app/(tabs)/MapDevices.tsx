@@ -85,7 +85,7 @@ const MapDevices: React.FC = () => {
         {devices.map((device) => {
           const coordinates = parseLocation(device.location);
           const zoneCoordinates = parsePolygon(device.zone.location);
-
+          const zoneName = device.zone.name;
           return (
             <React.Fragment key={device.id}>
               <Marker
@@ -101,6 +101,15 @@ const MapDevices: React.FC = () => {
                 fillColor={`${device.zone.boundary_color}80`} 
                 strokeWidth={2}
               />
+              <Marker
+                coordinate={zoneCoordinates[0]}
+                title={zoneName}
+                pinColor="transparent"
+              >
+                <View style={styles.zoneNameContainer}>
+                  <Text style={styles.zoneNameText}>{zoneName}</Text>
+                </View>
+              </Marker>
             </React.Fragment>
           );
         })}
@@ -274,6 +283,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'center',
+  },
+  zoneNameContainer: {
+    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+    padding: 4,
+    borderRadius: 4,
+  },
+  zoneNameText: {
+    fontSize: 12,
+    color: '#333',
   },
 });
 

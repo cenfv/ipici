@@ -7,11 +7,12 @@ import { useEffect } from 'react';
 import 'react-native-reanimated';
 
 import { useColorScheme } from '@/src/components/useColorScheme';
+import AuthLoadingScreen from './AuthLoadingScreen';
 
 export { ErrorBoundary } from 'expo-router';
 
 export const unstable_settings = {
-  initialRouteName: 'index', 
+  initialRouteName: 'AuthLoadingScreen/index',
 };
 
 SplashScreen.preventAutoHideAsync();
@@ -45,6 +46,10 @@ function RootLayoutNav() {
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <Stack>
+        <Stack.Screen
+          name="AuthLoadingScreen/index"
+          options={{ headerShown: false }}
+        />
         <Stack.Screen
           name="(tabs)"
           options={{ headerShown: false }}

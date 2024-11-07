@@ -3,7 +3,6 @@ from rest_framework import serializers
 from accounts.models import CustomUser
 from core.models import LightingDevice, Zone, Address
 
-
 class AddressSerializer(serializers.ModelSerializer):
     class Meta:
         model = Address
@@ -22,26 +21,38 @@ class LightingDeviceSerializer(serializers.ModelSerializer):
         model = LightingDevice
         fields = '__all__'
 
+
 class CustomUserSerializer(serializers.ModelSerializer):
+    address = AddressSerializer(required=False)
+
     class Meta:
         model = CustomUser
-        fields = [
-            'email', 'first_name', 'last_name', 'phone', 'birth_date'
-        ]
+        fields = ['email', 'first_name', 'last_name', 'birth_date', 'phone', 'address']
+        extra_kwargs = {'role': {'required': True}}
 
     def create(self, validated_data):
-        email = validated_data.pop('email')
-        birth_date = validated_data.pop('birth_date')
-        user_info = validated_data.pop('user_info', None)
+        address_data = validated_data.pop('address', None)
 
-        user = CustomUser.objects.create_user(
-            email=email,
-            birth_date=birth_date,
-            user_info=user_info,
-            **validated_data
-        )
+        user = CustomUser.objects.create_user(password=None, role=CustomUser.RoleChoices.REGULAR_USER, **validated_data)
+
+        if address_data:
+            address = Address.objects.create(**address_data)
+            user.address = address
+            user.save()
 
         return user
+
+    def update(self, instance, validated_data):
+        address_data = validated_data.pop('address', None)
+        if address_data:
+            if instance.address:
+                for key, value in address_data.items():
+                    setattr(instance.address, key, value)
+                instance.address.save()
+            else:
+                instance.address = Address.objects.create(**address_data)
+
+        return super().update(instance, validated_data)
 
 class PasswordResetRequestSerializer(serializers.Serializer):
     email = serializers.EmailField()
