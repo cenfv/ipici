@@ -39,7 +39,7 @@ const ReportProblemScreen: React.FC = () => {
         status: 'RELATADO',
       });
       Alert.alert('Sucesso', 'Problema relatado com sucesso.');
-      navigation.goBack();
+      navigation.goBack(); // Voltar para a tela anterior
     } catch (error) {
       Alert.alert('Erro', 'Não foi possível relatar o problema.');
     } finally {
@@ -49,8 +49,14 @@ const ReportProblemScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Text style={styles.header}>Relatar Problema</Text>
-      
+      {/* Header com botão de voltar */}
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <FontAwesome name="arrow-left" size={24} color="#333" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Relatar Problema</Text>
+      </View>
+
       <Text style={styles.label}>Descrição do Problema</Text>
       <TextInput
         style={styles.input}
@@ -66,12 +72,13 @@ const ReportProblemScreen: React.FC = () => {
         <Text style={styles.imagePickerButtonText}>Escolher Imagem</Text>
       </TouchableOpacity>
 
+      {image && <Image source={{ uri: image }} style={styles.imagePreview} />}
 
-      {image && (
-        <Image source={{ uri: image }} style={styles.imagePreview} />
-      )}
-
-      <TouchableOpacity style={[styles.submitButton, loading && styles.disabledButton]} onPress={handleSubmit} disabled={loading}>
+      <TouchableOpacity
+        style={[styles.submitButton, loading && styles.disabledButton]}
+        onPress={handleSubmit}
+        disabled={loading}
+      >
         {loading ? (
           <ActivityIndicator size="small" color="#FFF" />
         ) : (
@@ -91,11 +98,17 @@ const styles = StyleSheet.create({
     backgroundColor: '#f9f9f9',
   },
   header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  backButton: {
+    marginRight: 10,
+  },
+  headerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
     color: '#333',
-    marginBottom: 20,
-    textAlign: 'center',
   },
   label: {
     fontSize: 16,
@@ -121,10 +134,12 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
     marginBottom: 10,
+    flexDirection: 'row',
   },
   imagePickerButtonText: {
     color: '#fff',
     fontSize: 16,
+    marginLeft: 8,
   },
   imagePreview: {
     width: '100%',
@@ -152,6 +167,8 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   icon: {
-    marginRight: 8,
+    backgroundColor: 'transparent',
+    padding: 8,
+    borderRadius: 50,
   },
 });

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, ScrollView, ImageBackground } from 'react-native';
-import { Text, Button, ActivityIndicator, Avatar, Card, Divider, Snackbar, useTheme } from 'react-native-paper';
+import { Text, Button, ActivityIndicator, Avatar, Card, Divider, Snackbar } from 'react-native-paper';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getUserByBearer } from '../../service/user/userService';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -26,7 +26,7 @@ interface User {
   address: Address | null;
 }
 
-export default function UserScreen({  }) {
+export default function UserScreen({}) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [snackbarVisible, setSnackbarVisible] = useState(false);
@@ -82,68 +82,71 @@ export default function UserScreen({  }) {
     );
   }
 
+  const getInitials = (name: string) => {
+    return name.charAt(0).toUpperCase();
+  };
+
   return (
     <ImageBackground
-    source={require('../../assets/images/background_dot.png')}
-    resizeMode="repeat"
-    style={styles.background}
-  >
-    <SafeAreaView style={styles.mainContainer}>
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
-        <Avatar.Image
-          size={100}
-          source={{
-            uri: 'https://via.placeholder.com/100', 
-          }}
-          style={styles.avatar}
-        />
-        <Text style={styles.userName}>{user.first_name} {user.last_name}</Text>
-        <Text style={styles.userEmail}>{user.email}</Text>
+      source={require('../../assets/images/background_dot.png')}
+      resizeMode="repeat"
+      style={styles.background}
+    >
+      <SafeAreaView style={styles.mainContainer}>
+        <ScrollView contentContainerStyle={styles.scrollContainer}>
+          <Avatar.Text
+            size={100}
+            label={getInitials(user.first_name)}
+            style={[styles.avatar, { backgroundColor: primaryColor }]}
+            color="#fff"
+          />
+          <Text style={styles.userName}>{user.first_name} {user.last_name}</Text>
+          <Text style={styles.userEmail}>{user.email}</Text>
 
-        <Card style={styles.card}>
-          <Card.Title title="Informações Pessoais" titleStyle={{ color: primaryColor }} />
-          <Card.Content>
-            <Text>Data de Nascimento: {user.birth_date}</Text>
-            <Text>Telefone: {user.phone}</Text>
-          </Card.Content>
-        </Card>
-
-        {user.address ? (
           <Card style={styles.card}>
-            <Card.Title title="Endereço" titleStyle={{ color: primaryColor }} />
+            <Card.Title title="Informações Pessoais" titleStyle={{ color: primaryColor }} />
             <Card.Content>
-              <Text>Rua: {user.address.street}, {user.address.number}</Text>
-              <Text>Bairro: {user.address.neighborhood}</Text>
-              <Text>Complemento: {user.address.complement}</Text>
-              <Text>Cidade: {user.address.city}</Text>
-              <Text>Estado: {user.address.state}</Text>
-              <Text>País: {user.address.country}</Text>
-              <Text>CEP: {user.address.zip_code}</Text>
+              <Text>Data de Nascimento: {user.birth_date}</Text>
+              <Text>Telefone: {user.phone}</Text>
             </Card.Content>
           </Card>
-        ) : (
-          <Text style={styles.noAddressText}>Endereço não disponível</Text>
-        )}
 
-        <Divider style={styles.divider} />
-      </ScrollView>
+          {user.address ? (
+            <Card style={styles.card}>
+              <Card.Title title="Endereço" titleStyle={{ color: primaryColor }} />
+              <Card.Content>
+                <Text>Rua: {user.address.street}, {user.address.number}</Text>
+                <Text>Bairro: {user.address.neighborhood}</Text>
+                <Text>Complemento: {user.address.complement}</Text>
+                <Text>Cidade: {user.address.city}</Text>
+                <Text>Estado: {user.address.state}</Text>
+                <Text>País: {user.address.country}</Text>
+                <Text>CEP: {user.address.zip_code}</Text>
+              </Card.Content>
+            </Card>
+          ) : (
+            <Text style={styles.noAddressText}>Endereço não disponível</Text>
+          )}
 
-      <Button
-        mode="contained"
-        onPress={handleLogout}
-        style={[styles.logoutButton, { backgroundColor: primaryColor }]}
-      >
-        Sair do sistema
-      </Button>
+          <Divider style={styles.divider} />
+        </ScrollView>
 
-      <Snackbar
-        visible={snackbarVisible}
-        onDismiss={() => setSnackbarVisible(false)}
-        duration={3000}
-      >
-        {snackbarMessage}
-      </Snackbar>
-    </SafeAreaView>
+        <Button
+          mode="contained"
+          onPress={handleLogout}
+          style={[styles.logoutButton, { backgroundColor: primaryColor }]}
+        >
+          Sair do sistema
+        </Button>
+
+        <Snackbar
+          visible={snackbarVisible}
+          onDismiss={() => setSnackbarVisible(false)}
+          duration={3000}
+        >
+          {snackbarMessage}
+        </Snackbar>
+      </SafeAreaView>
     </ImageBackground>
   );
 }
@@ -203,13 +206,12 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 16,
   },
-
   divider: {
     marginVertical: 16,
     width: '100%',
   },
   logoutButton: {
     marginBottom: 30,
-    margin:24
+    margin: 24,
   },
 });
