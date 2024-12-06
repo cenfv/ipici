@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, Modal, FlatList, SafeAreaView, Switch } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, Modal, FlatList, SafeAreaView, Switch, TouchableWithoutFeedback, Platform, UIManager, LayoutAnimation } from 'react-native';
 import MapView, { Marker, Polygon } from 'react-native-maps';
 import axios from 'axios';
 import { FontAwesome, MaterialIcons } from '@expo/vector-icons';
@@ -9,6 +9,7 @@ import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BackHandler } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
+import { TextInput } from 'react-native-paper';
 
 
 const mapTypes = [
@@ -74,6 +75,10 @@ const mapStyle = [
   { "featureType": "administrative", "elementType": "labels", "stylers": [{ "visibility": "off" }] }
 ];
 
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
+
 const MapDevices: React.FC = () => {
   const [devices, setDevices] = useState<LightingDevice[]>([]);
   const [selectedDevice, setSelectedDevice] = useState<LightingDevice | null>(null);
@@ -87,6 +92,8 @@ const MapDevices: React.FC = () => {
   const [showZones, setShowZones] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
   const [isBackHandlerEnabled, setIsBackHandlerEnabled] = useState(false);
+  const [isSearchVisible, setIsSearchVisible] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const mapRef = useRef<MapView>(null);
   const router = useRouter();
@@ -148,6 +155,45 @@ const MapDevices: React.FC = () => {
     fetchDevices();
   }, [fetchDevices]);
 
+  const toggleSearchBar = () => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setIsSearchVisible(!isSearchVisible);
+  };
+
+  const handleSearch = async () => {
+    if (!searchQuery) return;
+  
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(
+          searchQuery
+        )}&format=json&addressdetails=1`
+      );
+      const data = await response.json();
+  
+      if (data.length > 0) {
+        const location = data[0];
+        const lat = parseFloat(location.lat);
+        const lon = parseFloat(location.lon);
+  
+        mapRef.current?.animateToRegion({
+          latitude: lat,
+          longitude: lon,
+          latitudeDelta: 0.01,
+          longitudeDelta: 0.01,
+        });
+        toggleSearchBar();
+        setSearchQuery('');
+        
+      } else {
+        alert('Local não encontrado.');
+      }
+    } catch (error) {
+      console.error('Erro ao buscar localização:', error);
+      alert('Erro ao buscar localização.');
+    }
+  };
+
   const parseLocation = (locationStr: string): LocationType => {
     const [longitude, latitude] = locationStr.replace("SRID=4326;POINT (", "").replace(")", "").split(" ").map(coord => parseFloat(coord));
     return { latitude, longitude };
@@ -192,6 +238,10 @@ const MapDevices: React.FC = () => {
   });
 
   return (
+    <TouchableWithoutFeedback onPress={() => {
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+      setIsSearchVisible(false);
+    }}>
     <View style={styles.container}>
       <MapView
         ref={mapRef}
@@ -243,6 +293,28 @@ const MapDevices: React.FC = () => {
           );
         })}
       </MapView>
+
+      <SafeAreaView style={styles.searchContainer}>
+        {!isSearchVisible ? (
+          <TouchableOpacity onPress={toggleSearchBar} style={styles.searchIcon}>
+            <MaterialIcons name="search" size={28} color="#333" />
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.searchBox}>
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Pesquise um local..."
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              onSubmitEditing={handleSearch}
+            />
+            <TouchableOpacity onPress={handleSearch} style={styles.searchButton}>
+              <MaterialIcons name="arrow-forward" size={28} color="#FFF" />
+            </TouchableOpacity>
+          </View>
+        )}
+      </SafeAreaView>
+
       <SafeAreaView style={styles.safeAreaView}>
         <TouchableOpacity style={styles.mapTypeButton} onPress={() => setMapTypeMenuVisible(!mapTypeMenuVisible)}>
           <MaterialIcons name="layers" size={28} color="#333" />
@@ -372,6 +444,7 @@ const MapDevices: React.FC = () => {
         </Modal>
       )}
     </View>
+    </TouchableWithoutFeedback>
   );
 };
 
@@ -384,7 +457,7 @@ const styles = StyleSheet.create({
     right: 10,
   },
   mapTypeButton: {
-    marginTop: 30,
+    marginTop: 40,
     marginRight: 4,
     padding: 10,
     backgroundColor: '#FFF',
@@ -519,6 +592,56 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
+  searchIcon: {
+    marginTop: 10,
+    marginRight: 4,
+    padding: 10,
+    backgroundColor: '#FFF',
+    borderRadius: 25,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  searchButton: {
+    marginLeft: 5,
+    padding: 7,
+    backgroundColor: '#1B68AC',
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  searchContainer: {
+    position: 'absolute',
+    top: 40,
+    left: 20,
+    right: 70,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  searchBox: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF',
+    borderRadius: 8,
+    padding: 5,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  searchInput: {
+    flex: 1,
+    height: 10,
+    backgroundColor: '#F4F4F4',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    fontSize: 16,
+  },
+  
 });
 
 export default MapDevices;

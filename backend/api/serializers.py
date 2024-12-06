@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
 from accounts.models import CustomUser
-from core.models import LightingDevice, Zone, Address, ReportedProblem
+from core.models import LightingDevice, Zone, Address, ReportedProblem, ServiceOrder
 
 
 class AddressSerializer(serializers.ModelSerializer):
@@ -88,6 +88,7 @@ class SetPasswordSerializer(serializers.Serializer):
     def save(self, **kwargs):
         self.user.set_password(self.validated_data['new_password'])
         self.user.save()
+
 
 
 
