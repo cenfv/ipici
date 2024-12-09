@@ -13,9 +13,9 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from api.serializers import CustomUserSerializer, LightingDeviceSerializer, PasswordResetRequestSerializer, \
-    SetPasswordSerializer, ReportedProblemSerializer
+    SetPasswordSerializer, ReportedProblemSerializer, ServiceOrderSerializer
 from core.mailers.user_account_mailer import PasswordResetMailer
-from core.models import LightingDevice, ReportedProblem
+from core.models import LightingDevice, ReportedProblem, ServiceOrder
 
 
 class UserListCreateView(ListCreateAPIView):
@@ -148,3 +148,55 @@ class PasswordResetTokenValidationView(APIView):
             return Response({"valid": True}, status=status.HTTP_200_OK)
         else:
             return Response({"valid": False}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class ServiceOrderListCreateView(ListCreateAPIView):
+    queryset = ServiceOrder.objects.all()
+    serializer_class = ServiceOrderSerializer
+    permission_classes = [IsAuthenticated]
+
+    def perform_create(self, serializer):
+        # Automatically set the author to the logged-in user
+        serializer.save(author=self.request.user)
+
+    def list(self, request, *args, **kwargs):
+        # Optional: Add filtering or pagination
+        queryset = self.filter_queryset(self.get_queryset())
+
+        # You can add query parameter filters here
+        status = request.query_params.get('status', None)
+        priority = request.query_params.get('priority', None)
+
+        if status:
+            queryset = queryset.filter(status=status)
+        if priority:
+            queryset = queryset.filter(priority=priority)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+
+
+class ServiceOrderDetailView(RetrieveUpdateDestroyAPIView):
+    queryset = ServiceOrder.objects.all()
+    serializer_class = ServiceOrderSerializer
+    permission_classes = [IsAuthenticated]
+
+    def perform_update(self, serializer):
+        instance = serializer.save()
+
+        if not instance.responsible and instance.status == 'EM_ANDAMENTO':
+            instance.responsible = self.request.user
+            instance.save()
+
+
+class ServiceOrderByDeviceView(ListCreateAPIView):
+    serializer_class = ServiceOrderSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        device_id = self.kwargs.get('device_id')
+        return ServiceOrder.objects.filter(device_id=device_id)
+
+    def perform_create(self, serializer):
+        device_id = self.kwargs.get('device_id')
+        serializer.save(author=self.request.user, device_id=device_id)

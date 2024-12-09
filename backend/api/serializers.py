@@ -90,5 +90,71 @@ class SetPasswordSerializer(serializers.Serializer):
         self.user.save()
 
 
+class ServiceOrderSerializer(serializers.ModelSerializer):
+    responsible = serializers.PrimaryKeyRelatedField(
+        queryset=CustomUser.objects.all(),
+        required=False,
+        allow_null=True
+    )
+    author = serializers.PrimaryKeyRelatedField(
+        queryset=CustomUser.objects.all(),
+        required=False,
+        allow_null=True
+    )
+    device = serializers.PrimaryKeyRelatedField(
+        queryset=LightingDevice.objects.all()
+    )
+    reported_problems = serializers.PrimaryKeyRelatedField(
+        queryset=ReportedProblem.objects.all(),
+        many=True,
+        required=False
+    )
+    device_details = LightingDeviceSerializer(source='device', read_only=True)
+    responsible_details = CustomUserSerializer(source='responsible', read_only=True)
+    author_details = CustomUserSerializer(source='author', read_only=True)
+
+    class Meta:
+        model = ServiceOrder
+        fields = [
+            'id',
+            'title',
+            'description',
+            'creation_date',
+            'priority',
+            'location',
+            'status',
+            'responsible',
+            'author',
+            'device',
+            'problem_type',
+            'reported_problems',
+            'device_image',
+            'device_details',
+            'responsible_details',
+            'author_details'
+        ]
+        read_only_fields = ['creation_date']
+
+    def create(self, validated_data):
+        reported_problems = validated_data.pop('reported_problems', [])
+        service_order = ServiceOrder.objects.create(**validated_data)
+
+        if reported_problems:
+            service_order.reported_problems.set(reported_problems)
+
+        return service_order
+
+    def update(self, instance, validated_data):
+        reported_problems = validated_data.pop('reported_problems', None)
+
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+        if reported_problems is not None:
+            instance.reported_problems.set(reported_problems)
+
+        return instance
+
 
 

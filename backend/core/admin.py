@@ -65,7 +65,7 @@ class OperationalCostAdmin(admin.ModelAdmin):
 
 @admin.register(ReportedProblem)
 class ReportedProblemAdmin(admin.ModelAdmin):
-    list_display = ('user', 'device', 'status', 'report_date', 'description', 'image', 'origin')
+    list_display = ('user', 'device', 'status', 'report_date', 'description', 'origin')
     search_fields = ('user__email', 'device__number', 'status', 'description')
     list_filter = ('status', 'report_date', 'origin')
 
