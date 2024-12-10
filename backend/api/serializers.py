@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
 from accounts.models import CustomUser
-from core.models import LightingDevice, Zone, Address, ReportedProblem, ServiceOrder
+from core.models import LightingDevice, Zone, Address, ReportedProblem, ServiceOrder, Maintenance, OperationalCost
 
 
 class AddressSerializer(serializers.ModelSerializer):
@@ -157,4 +157,60 @@ class ServiceOrderSerializer(serializers.ModelSerializer):
         return instance
 
 
+class OperationalCostSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = OperationalCost
+        fields = '__all__'
+        read_only_fields = ['id']
 
+
+class MaintenanceSerializer(serializers.ModelSerializer):
+    operational_cost = OperationalCostSerializer(read_only=True)
+    cost_type = serializers.ChoiceField(choices=OperationalCost.COST_TYPE_CHOICES, write_only=True, required=True)
+    value = serializers.DecimalField(max_digits=10, decimal_places=2, write_only=True, required=True)
+
+    class Meta:
+        model = Maintenance
+        fields = '__all__'
+        read_only_fields = ['id', 'operational_cost']
+
+    def create(self, validated_data):
+        cost_type = validated_data.pop('cost_type')
+        value = validated_data.pop('value')
+
+        operational_cost = OperationalCost.objects.create(
+            device=validated_data['device'],
+            cost_type=cost_type,
+            value=value,
+            date=validated_data['maintenance_date'],
+            description=f"Custo associado à manutenção: {validated_data['description']}"
+        )
+
+        validated_data['operational_cost'] = operational_cost
+
+        maintenance = Maintenance.objects.create(**validated_data)
+
+        service_order = validated_data.get('service_order')
+        if service_order:
+            service_order.status = 'CONCLUIDA'
+            service_order.save()
+
+        return maintenance
+
+    def update(self, instance, validated_data):
+        cost_type = validated_data.pop('cost_type', None)
+        value = validated_data.pop('value', None)
+
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+        if cost_type or value:
+            operational_cost = instance.operational_cost
+            if cost_type:
+                operational_cost.cost_type = cost_type
+            if value:
+                operational_cost.value = value
+            operational_cost.save()
+
+        return instance

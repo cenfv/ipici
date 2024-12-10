@@ -51,9 +51,9 @@ class SensorInline(admin.TabularInline):
 
 @admin.register(Maintenance)
 class MaintenanceAdmin(admin.ModelAdmin):
-    list_display = ('device', 'maintenance_date', 'description', 'responsible_technician', 'cost')
+    list_display = ('device', 'maintenance_date', 'description', 'responsible_technician', 'operational_cost')
     search_fields = ('device__number', 'responsible_technician__email', 'description')
-    list_filter = ('maintenance_date', 'responsible_technician')
+    list_filter = ('maintenance_date', 'responsible_technician', 'operational_cost')
 
 
 @admin.register(OperationalCost)

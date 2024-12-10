@@ -61,11 +61,11 @@ const getStatusMarkerUrl = (status: string): string => {
     case 'DESATIVADO':
       return 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-grey.png';
     case 'INDISPONIVEL':
-      return 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-violet.png';
+      return 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-grey.png';
     case 'PENDENTE_ATIVACAO':
-      return 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png'; 
+      return 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-grey.png';
     default:
-      return 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png';
+      return 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-grey.png';
   }
 };
 
@@ -111,7 +111,7 @@ const MapDevices: React.FC = () => {
     const token = await AsyncStorage.getItem('access_token');
     setIsLoading(true);
     try {
-      const response = await axios.get<LightingDevice[]>('http://192.168.1.13:8000/api/devices/', {
+      const response = await axios.get<LightingDevice[]>('http://192.168.1.5:8000/api/devices/', {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (Array.isArray(response.data)) {

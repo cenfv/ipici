@@ -7,7 +7,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView,TokenVerifyView
 from api.views import UserListCreateView, PasswordResetRequestView, PasswordResetTokenValidationView, \
     PasswordResetConfirmView, LightingDeviceListView, LightingDeviceDetailView, UserDetailView, UserMeView, \
     ReportedProblemListCreateView, ReportedProblemDetailView, ServiceOrderListCreateView, ServiceOrderDetailView, \
-    ServiceOrderByDeviceView
+    ServiceOrderByDeviceView, MaintenanceListCreateView, MaintenanceDetailView
 
 router = DefaultRouter()
 
@@ -31,6 +31,9 @@ urlpatterns = [
     path('service-orders/', ServiceOrderListCreateView.as_view(), name='service-order-list'),
     path('service-orders/<int:pk>/', ServiceOrderDetailView.as_view(), name='service-order-detail'),
     path('service-orders/device/<int:device_id>/', ServiceOrderByDeviceView.as_view(), name='service-order-by-device'),
+
+    path('maintenances/', MaintenanceListCreateView.as_view(), name='maintenance-list-create'),
+    path('maintenances/<int:pk>/', MaintenanceDetailView.as_view(), name='maintenance-detail'),
 
     path('schema/', SpectacularAPIView.as_view(), name='schema'),
     path('schema/swagger-ui/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),

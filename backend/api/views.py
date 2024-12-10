@@ -13,9 +13,9 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from api.serializers import CustomUserSerializer, LightingDeviceSerializer, PasswordResetRequestSerializer, \
-    SetPasswordSerializer, ReportedProblemSerializer, ServiceOrderSerializer
+    SetPasswordSerializer, ReportedProblemSerializer, ServiceOrderSerializer, MaintenanceSerializer
 from core.mailers.user_account_mailer import PasswordResetMailer
-from core.models import LightingDevice, ReportedProblem, ServiceOrder
+from core.models import LightingDevice, ReportedProblem, ServiceOrder, Maintenance
 
 
 class UserListCreateView(ListCreateAPIView):
@@ -156,14 +156,11 @@ class ServiceOrderListCreateView(ListCreateAPIView):
     permission_classes = [IsAuthenticated]
 
     def perform_create(self, serializer):
-        # Automatically set the author to the logged-in user
         serializer.save(author=self.request.user)
 
     def list(self, request, *args, **kwargs):
-        # Optional: Add filtering or pagination
         queryset = self.filter_queryset(self.get_queryset())
 
-        # You can add query parameter filters here
         status = request.query_params.get('status', None)
         priority = request.query_params.get('priority', None)
 
@@ -200,3 +197,16 @@ class ServiceOrderByDeviceView(ListCreateAPIView):
     def perform_create(self, serializer):
         device_id = self.kwargs.get('device_id')
         serializer.save(author=self.request.user, device_id=device_id)
+
+class MaintenanceListCreateView(ListCreateAPIView):
+    queryset = Maintenance.objects.all()
+    serializer_class = MaintenanceSerializer
+    permission_classes = [IsAuthenticated]
+
+    def perform_create(self, serializer):
+        serializer.save(responsible_technician=self.request.user)
+
+class MaintenanceDetailView(RetrieveUpdateDestroyAPIView):
+    queryset = Maintenance.objects.all()
+    serializer_class = MaintenanceSerializer
+    permission_classes = [IsAuthenticated]

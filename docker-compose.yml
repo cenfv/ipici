@@ -35,12 +35,12 @@ services:
     volumes:
       - ./backend/:/app/
     ports:
-      - "8000:8000"
+      - "8001:8000"
     environment:
       - DEBUG=1
       - SECRET_KEY=django-insecure-whg8eyrugweryu83845438977gh
-      - ALLOWED_HOSTS=localhost,127.0.0.1,192.168.1.13
-      - BASE_URL=http://localhost:8000
+      - ALLOWED_HOSTS=*
+      - BASE_URL=http://localhost:8001
       - DATABASE_ENGINE=postgresql
       - DATABASE_NAME=ipici
       - DATABASE_USERNAME=ipici

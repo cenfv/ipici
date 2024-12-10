@@ -18,7 +18,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-#&^_')
 DEBUG = os.environ.get('DEBUG', True)
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost, 127.0.0.1, 192.168.1.13').split(',')
+# ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost, 127.0.0.1, 192.168.1.13, 192.168.1.5').split(',')
+ALLOWED_HOSTS = ["*"]
 CSRF_TRUSTED_ORIGINS = os.environ.get('CSRF_TRUSTED_ORIGINS', 'http://localhost').split(',')
 CSRF_COOKIE_SECURE=False
 SESSION_COOKIE_SECURE=False
@@ -182,10 +183,8 @@ AUTH_USER_MODEL = 'accounts.CustomUser'
 # https://docs.djangoproject.com/en/4.2/topics/i18n/
 
 LANGUAGE_CODE = 'pt-br'
-USE_I18N = True
-
 TIME_ZONE = 'America/Sao_Paulo'
-USE_TZ = True
+USE_L10N = True
 
 
 # Static files (CSS, JavaScript, Images)
