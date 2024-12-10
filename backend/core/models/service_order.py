@@ -33,3 +33,6 @@ class ServiceOrder(models.Model):
     class Meta:
         verbose_name = 'Ordem de Serviço'
         verbose_name_plural = 'Ordens de Serviço'
+
+    def __str__(self):
+        return f"{self.device} - {self.title}"

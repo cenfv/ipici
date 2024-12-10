@@ -27,3 +27,6 @@ class ReportedProblem(models.Model):
     class Meta:
         verbose_name = 'Problema Relatado'
         verbose_name_plural = 'Problemas Relatados'
+
+    def __str__(self):
+        return f"{self.device} - {self.report_date}"

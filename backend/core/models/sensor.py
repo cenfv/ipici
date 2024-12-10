@@ -24,3 +24,6 @@ class Sensor(models.Model):
     class Meta:
         verbose_name = 'Sensor'
         verbose_name_plural = 'Sensores'
+
+    def __str__(self):
+        return f"{self.device} - {self.sensor_status}"

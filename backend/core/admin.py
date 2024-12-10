@@ -85,13 +85,15 @@ class AddressAdmin(admin.ModelAdmin):
 
 @admin.register(LightingDevice)
 class LightingDeviceAdmin(LeafletGeoAdmin):
-    list_display = ('number', 'owner', 'structural_name', 'type', 'height', 'material', 'installation_date', 'operational_status', 'qr_code', 'energy_source', 'zone', 'address')
-    search_fields = ('number', 'owner', 'structural_name', 'qr_code', 'energy_source')
+    list_display = (
+    'code', 'owner', 'structural_name', 'type', 'height', 'material', 'installation_date', 'operational_status', 'qr_code', 'energy_source', 'zone', 'address')
+    search_fields = ('code', 'owner', 'structural_name', 'qr_code', 'energy_source')
     list_filter = ('type', 'operational_status', 'zone', 'address')
     inlines = [MaintenanceInline, OperationalCostInline, SensorInline]
     fieldsets = (
         (None, {
-            'fields': ('number', 'owner', 'structural_name', 'type', 'height', 'material', 'installation_date','address', 'zone', 'location')
+            'fields': (
+            'code', 'owner', 'structural_name', 'type', 'height', 'material', 'installation_date', 'address', 'zone', 'location')
         }),
         ('Operational Info', {
             'fields': ('operational_status', 'qr_code', 'energy_source', 'last_maintenance_date')

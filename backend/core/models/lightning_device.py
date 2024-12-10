@@ -34,7 +34,7 @@ class LightingDevice(models.Model):
         ('PENDENTE_ATIVACAO', 'Pendente de Ativação')
 
     ]
-    number = models.CharField(max_length=50, unique=True, verbose_name='Número')
+    code = models.CharField(max_length=50, unique=True, verbose_name='Código de identificação')
     owner = models.CharField(max_length=100, verbose_name='Proprietário')
     structural_name = models.CharField(max_length=100, verbose_name='Denominação Estrutural')
     type = models.CharField(max_length=50, choices=TYPE_CHOICES, verbose_name='Tipo')
@@ -55,3 +55,6 @@ class LightingDevice(models.Model):
     class Meta:
         verbose_name = 'Dispositivo'
         verbose_name_plural = 'Dispositivos'
+
+    def __str__(self):
+        return f"{self.type} - {self.code}"

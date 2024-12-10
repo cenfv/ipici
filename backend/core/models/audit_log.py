@@ -12,3 +12,6 @@ class AuditLog(models.Model):
     class Meta:
         verbose_name = 'Log de Auditoria'
         verbose_name_plural = 'Logs de Auditoria'
+
+    def __str__(self):
+        return f"{self.action} - {self.timestamp}"

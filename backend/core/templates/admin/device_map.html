@@ -344,7 +344,7 @@
             <div id="device-header">Detalhes do Dispositivo</div>
             <button onclick="document.getElementById('device-details').style.display = 'none'">✕</button>
             <div id="device-content">
-                <h3>Dispositivo nº ${device.number}</h3>
+                <h3>Dispositivo - ${device.code}</h3>
                 <p><b>Tipo:</b> ${device.type}</p>
                 <p><b>Denominação Estrutural:</b> ${device.structural_name}</p>
                 <p><b>Status Operacional:</b> ${device.operational_status}</p>
@@ -382,7 +382,7 @@
             },
             onEachFeature: function (feature, layer) {
                 const deviceData = {
-                    number: feature.properties.number,
+                    code: feature.properties.code,
                     owner: feature.properties.owner,
                     structural_name: feature.properties.structural_name,
                     type: feature.properties.type,
@@ -402,7 +402,7 @@
 
                 };
 
-                layer.bindPopup(`<b>Dispositivo:</b> ${deviceData.number}<br><b>Tipo:</b> ${deviceData.type}<br><b>Status:</b> ${deviceData.operational_status}`);
+                layer.bindPopup(`<b>Dispositivo:</b> ${deviceData.code}<br><b>Tipo:</b> ${deviceData.type}<br><b>Status:</b> ${deviceData.operational_status}`);
                 layer.on('click', function() {
                     showDeviceDetails(deviceData);
                 });

@@ -18,3 +18,6 @@ class OperationalCost(models.Model):
     class Meta:
         verbose_name = 'Custo Operacional'
         verbose_name_plural = 'Custos Operacionais'
+
+    def __str__(self):
+        return f"{self.device} - {self.date}"

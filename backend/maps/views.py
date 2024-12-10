@@ -100,7 +100,7 @@ def device_map_view(request):
             F('address__country__name')
         ),
     ).values(
-        'number', 'owner', 'structural_name', 'type', 'height', 'material',
+        'code', 'owner', 'structural_name', 'type', 'height', 'material',
         'installation_date', 'location', 'device_image', 'operational_status',
         'qr_code', 'energy_source', 'zone_name', 'additional_features','nearby_installations', 'full_address', 'last_maintenance_date'
     )
@@ -115,7 +115,7 @@ def device_map_view(request):
             "type": "Feature",
             "geometry": json.loads(device['location'].geojson),
             "properties": {
-                "number": device['number'],
+                "code": device['code'],
                 "owner": device['owner'],
                 "structural_name": device['structural_name'],
                 "type": device['type'],

@@ -6,7 +6,7 @@ class Country(models.Model):
     code = models.CharField(max_length=3, unique=True, verbose_name='Código do País')
 
     def __str__(self):
-        return self.name
+        return f"{self.name} - {self.code}"
 
     class Meta:
         verbose_name = 'País'

@@ -22,3 +22,6 @@ class Maintenance(models.Model):
     class Meta:
         verbose_name = 'Manutenção'
         verbose_name_plural = 'Manutenções'
+
+    def __str__(self):
+        return f"{self.device} - {self.maintenance_date}"
