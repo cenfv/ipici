@@ -1,13 +1,17 @@
 from django.contrib import admin
 from django.contrib.auth.models import Group
 from django.utils.html import format_html
-
+from django.db import models
+from django.db.models import fields
+from django.db.models.expressions import ExpressionWrapper
 from .forms import ZoneAdminForm
 from .models import (
-    AuditLog, Country, LightingDevice, Maintenance,
-    OperationalCost, ReportedProblem, Sensor, ServiceOrder, Zone, MailHistory, Address
+    AuditLog, LightingDevice, Maintenance,
+    OperationalCost, ReportedProblem, Sensor, ServiceOrder, Zone, MailHistory, Address, Report
 )
 from leaflet.admin import LeafletGeoAdmin
+
+
 
 try:
     from rest_framework.authtoken.models import TokenProxy as DRFToken
@@ -131,15 +135,12 @@ class ServiceOrderAdmin(LeafletGeoAdmin):
 @admin.register(Zone)
 class ZoneAdmin(LeafletGeoAdmin):
     form = ZoneAdminForm
-    list_display = ('name', 'description', 'city', 'region', 'neighborhood', 'zone_code', 'device_count', 'problem_count', 'created_at')
+    list_display = ('name', 'description', 'city', 'region', 'neighborhood', 'zone_code', 'created_at')
     search_fields = ('name', 'zone_code', 'city', 'region', 'neighborhood')
 
     fieldsets = (
         (None, {
             'fields': ('name', 'description', 'location', 'zone_code', 'boundary_color')
-        }),
-        ('Statistics', {
-            'fields': ('device_count', 'problem_count')
         }),
         ('Additional Info', {
             'fields': ('city', 'region', 'neighborhood')
@@ -187,3 +188,212 @@ class SystemLogAdmin(admin.ModelAdmin):
         extra_context = extra_context or {}
         extra_context['show_add_button'] = False
         return super().changelist_view(request, extra_context)
+
+
+# file: admin/reports.py
+from django.contrib import admin
+from django.db.models import Count, Sum, Avg, F
+from django.db.models.functions import ExtractDay, Now
+from django.http import JsonResponse
+from django.shortcuts import render
+from django.urls import path
+
+from .models import (
+    Maintenance,
+    ReportedProblem,
+    OperationalCost,
+    LightingDevice,
+    Zone,
+)
+
+
+@admin.register(Report)
+class ReportAdmin(admin.ModelAdmin):
+    change_list_template = 'admin/reports/report_dashboard.html'
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return True
+
+    def changelist_view(self, request, extra_context=None):
+        return self.get_report_view(request)
+
+    def get_report_view(self, request):
+        context = {
+            'title': 'Dashboard de Relatórios',
+            **self.admin_site.each_context(request),
+            'is_nav_sidebar_enabled': True,
+            'has_permission': True,
+            'available_apps': self.admin_site.get_app_list(request),
+        }
+        return render(request, self.change_list_template, context)
+
+    def get_urls(self):
+        urls = super().get_urls()
+        custom_urls = [
+            path('chart_data/<str:report_type>/', self.chart_data, name='report_chart_data'),
+        ]
+        return custom_urls + urls
+
+    def get_devices_data(self):
+        # Distribuição dos tipos de dispositivos por zona
+        devices_by_zone = (
+            LightingDevice.objects.values('zone__name', 'type')
+            .annotate(count=Count('id'))
+            .exclude(zone__isnull=True)
+            .order_by('zone__name', 'type')
+        )
+
+        # Status operacional dos dispositivos
+        operational_status = (
+            LightingDevice.objects.values('operational_status')
+            .annotate(count=Count('id'))
+            .order_by('operational_status')
+        )
+
+        return {
+            'devicesByZone': {
+                'labels': list(set([item['zone__name'] for item in devices_by_zone])),
+                'datasets': [
+                    {
+                        'label': device_type,
+                        'data': [next((item['count'] for item in devices_by_zone
+                                       if item['zone__name'] == zone and item['type'] == device_type), 0)
+                                 for zone in set([item['zone__name'] for item in devices_by_zone])]
+                    }
+                    for device_type in set([item['type'] for item in devices_by_zone])
+                ]
+            },
+            'operationalStatus': {
+                'labels': [item['operational_status'] for item in operational_status],
+                'data': [item['count'] for item in operational_status]
+            }
+        }
+
+    def get_maintenance_data(self):
+        # Frequência de manutenção por dispositivo
+        maintenance_frequency = (
+            Maintenance.objects.values('device__structural_name')
+            .annotate(count=Count('id'))
+            .order_by('-count')[:10]
+        )
+
+        return {
+            'maintenanceFrequency': {
+                'labels': [item['device__structural_name'] for item in maintenance_frequency],
+                'data': [item['count'] for item in maintenance_frequency]
+            }
+        }
+
+    def get_problems_data(self):
+        # Taxa de resolução de problemas por zona
+        total_problems = (
+            ReportedProblem.objects.values('device__zone__name')
+            .annotate(
+                total=Count('id'),
+                resolved=Count('id', filter=models.Q(status='RESOLVIDO'))
+            )
+            .exclude(device__zone__isnull=True)
+        )
+
+        return {
+            'problemResolution': {
+                'labels': [item['device__zone__name'] for item in total_problems],
+                'data': [
+                    round((item['resolved'] / item['total']) * 100, 2)
+                    if item['total'] > 0 else 0
+                    for item in total_problems
+                ]
+            }
+        }
+
+    def get_service_orders_data(self):
+        # Tempo médio de conclusão por prioridade
+        completed_orders = (
+            ServiceOrder.objects.filter(status='CONCLUIDA')
+            .values('priority')
+            .annotate(
+                avg_time=Avg(
+                    ExpressionWrapper(
+                        F('updated_at') - F('creation_date'),
+                        output_field=fields.DurationField()
+                    )
+                )
+            )
+        )
+
+        return {
+            'completionTime': {
+                'labels': [item['priority'] for item in completed_orders],
+                'data': [item['avg_time'].total_seconds() / 3600 for item in completed_orders]
+            }
+        }
+
+    def get_financial_data(self):
+        # Custos totais por zona
+        costs_by_zone = (
+            OperationalCost.objects.values('device__zone__name')
+            .annotate(total_cost=Sum('value'))
+            .exclude(device__zone__isnull=True)
+            .order_by('-total_cost')
+        )
+
+        return {
+            'costsByZone': {
+                'labels': [item['device__zone__name'] for item in costs_by_zone],
+                'data': [float(item['total_cost']) for item in costs_by_zone]
+            }
+        }
+
+    def get_geographical_data(self):
+        # Mapeamento de problemas por zona
+        problems_by_zone = (
+            ReportedProblem.objects.values('device__zone__name')
+            .annotate(count=Count('id'))
+            .exclude(device__zone__isnull=True)
+            .order_by('-count')
+        )
+
+        return {
+            'problemsByZone': {
+                'labels': [item['device__zone__name'] for item in problems_by_zone],
+                'data': [item['count'] for item in problems_by_zone]
+            }
+        }
+
+    def get_users_data(self):
+        # Análise de problemas reportados por usuário
+        problems_by_user = (
+            ReportedProblem.objects.values('user__email')
+            .annotate(count=Count('id'))
+            .exclude(user__isnull=True)
+            .order_by('-count')[:10]
+        )
+
+        return {
+            'problemsByUser': {
+                'labels': [item['user__email'] for item in problems_by_user],
+                'data': [item['count'] for item in problems_by_user]
+            }
+        }
+
+    def chart_data(self, request, report_type):
+        data_functions = {
+            'devices': self.get_devices_data,
+            'maintenance': self.get_maintenance_data,
+            'problems': self.get_problems_data,
+            'service_orders': self.get_service_orders_data,
+            'financial': self.get_financial_data,
+            'geographical': self.get_geographical_data,
+            'users': self.get_users_data,
+        }
+
+        if report_type in data_functions:
+            return JsonResponse(data_functions[report_type]())
+
+        return JsonResponse({'error': 'Invalid report type'}, status=400)

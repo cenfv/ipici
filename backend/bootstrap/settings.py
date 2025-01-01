@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'django.contrib.gis',
     'leaflet',
+    'chartjs',
 
     # Custom Apps
     'core',

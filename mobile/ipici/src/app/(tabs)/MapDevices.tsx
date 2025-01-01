@@ -111,7 +111,7 @@ const MapDevices: React.FC = () => {
     const token = await AsyncStorage.getItem('access_token');
     setIsLoading(true);
     try {
-      const response = await axios.get<LightingDevice[]>('http://192.168.1.5:8000/api/devices/', {
+      const response = await axios.get<LightingDevice[]>('http://192.168.1.12:8001/api/devices/', {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (Array.isArray(response.data)) {

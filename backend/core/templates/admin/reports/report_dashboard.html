@@ -1,0 +1,489 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block extrahead %}
+{{ block.super }}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+    .report-dashboard {
+        margin: 0;
+	    width: 100%;
+        padding: 20px;
+        box-sizing: border-box;
+    }
+
+    .report-tabs {
+        display: flex;
+        gap: 1px;
+        background-color: #f0f2f5;
+        padding: 10px;
+        border-radius: 8px 8px 0 0;
+        overflow-x: auto;
+        box-sizing: border-box;
+        margin-bottom: 0;
+    }
+
+    .tab-button {
+        padding: 10px 20px;
+        border: none;
+        background-color: #fff;
+        cursor: pointer;
+        font-weight: 500;
+        color: #666;
+        transition: all 0.3s;
+        white-space: nowrap;
+        flex: 1;
+        min-width: max-content;
+    }
+
+    .tab-button.active {
+        background-color: #1976d2;
+        color: white;
+    }
+
+    .tab-content {
+        display: none;
+        padding: 20px;
+        background-color: white;
+        border-radius: 0 0 8px 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        box-sizing: border-box;
+        margin: 0;
+    }
+
+    .tab-content.active {
+        display: block;
+    }
+
+    .chart-container {
+        margin-bottom: 30px;
+        padding: 20px;
+        border-radius: 8px;
+        background-color: white;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        box-sizing: border-box;
+        position: relative;
+    }
+
+    .chart-title {
+        margin-bottom: 15px;
+        color: #333;
+        font-size: 1.2em;
+        font-weight: 500;
+    }
+
+    .chart-wrapper {
+        position: relative;
+        aspect-ratio: 16/9;
+        min-height: 300px;
+        max-height: 500px;
+    }
+
+    /* Ajustes responsivos */
+    @media (max-width: 768px) {
+        .report-dashboard {
+            padding: 10px;
+        }
+
+        .report-tabs {
+            padding: 5px;
+        }
+
+        .tab-button {
+            padding: 8px 15px;
+            font-size: 0.9em;
+        }
+
+        .tab-content {
+            padding: 10px;
+        }
+
+        .chart-container {
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .chart-wrapper {
+            min-height: 200px;
+        }
+    }
+
+    /* Ajustes para o tema Jazzmin */
+    .content {
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
+    #content-main {
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
+    .card {
+        margin: 0 !important;
+    }
+
+    .card-body {
+        padding: 0 !important;
+    }
+</style>
+{% endblock %}
+{% block content %}
+<div class="report-dashboard">
+    <div class="report-tabs">
+        <button class="tab-button active" data-tab="devices">Dispositivos</button>
+        <button class="tab-button" data-tab="maintenance">Manutenção</button>
+        <button class="tab-button" data-tab="problems">Problemas</button>
+        <button class="tab-button" data-tab="service-orders">Ordens de Serviço</button>
+        <button class="tab-button" data-tab="financial">Financeiro</button>
+        <button class="tab-button" data-tab="geographical">Geográfico</button>
+        <button class="tab-button" data-tab="users">Usuários</button>
+    </div>
+
+    <!-- Dispositivos -->
+    <div id="devices" class="tab-content active">
+        <div class="chart-container">
+            <h3 class="chart-title">Distribuição de Dispositivos por Zona</h3>
+            <div class="chart-wrapper">
+                <canvas id="devicesByZoneChart"></canvas>
+            </div>
+        </div>
+        <div class="chart-container">
+            <h3 class="chart-title">Status Operacional dos Dispositivos</h3>
+            <div class="chart-wrapper">
+                <canvas id="operationalStatusChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Manutenção -->
+    <div id="maintenance" class="tab-content">
+        <div class="chart-container">
+            <h3 class="chart-title">Frequência de Manutenção por Dispositivo</h3>
+            <div class="chart-wrapper">
+                <canvas id="maintenanceFrequencyChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Problemas -->
+    <div id="problems" class="tab-content">
+        <div class="chart-container">
+            <h3 class="chart-title">Taxa de Resolução de Problemas por Zona</h3>
+            <div class="chart-wrapper">
+                <canvas id="problemResolutionChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ordens de Serviço -->
+    <div id="service-orders" class="tab-content">
+        <div class="chart-container">
+            <h3 class="chart-title">Tempo Médio de Conclusão por Prioridade</h3>
+            <div class="chart-wrapper">
+                <canvas id="completionTimeChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Financeiro -->
+    <div id="financial" class="tab-content">
+        <div class="chart-container">
+            <h3 class="chart-title">Custos Totais por Zona</h3>
+            <div class="chart-wrapper">
+                <canvas id="costsByZoneChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Geográfico -->
+    <div id="geographical" class="tab-content">
+        <div class="chart-container">
+            <h3 class="chart-title">Incidência de Problemas por Zona</h3>
+            <div class="chart-wrapper">
+                <canvas id="problemsByZoneChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Usuários -->
+    <div id="users" class="tab-content">
+        <div class="chart-container">
+            <h3 class="chart-title">Problemas Reportados por Usuário</h3>
+            <div class="chart-wrapper">
+                <canvas id="problemsByUserChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const chartColors = {
+        blue: 'rgba(54, 162, 235, 0.5)',
+        blueBorder: 'rgba(54, 162, 235, 1)',
+        green: 'rgba(75, 192, 192, 0.5)',
+        greenBorder: 'rgba(75, 192, 192, 1)',
+        orange: 'rgba(255, 159, 64, 0.5)',
+        orangeBorder: 'rgba(255, 159, 64, 1)',
+        red: 'rgba(255, 99, 132, 0.5)',
+        redBorder: 'rgba(255, 99, 132, 1)'
+    };
+
+    // Tab switching functionality
+    const tabs = document.querySelectorAll('.tab-button');
+    const contents = document.querySelectorAll('.tab-content');
+    
+    tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            const tabName = tab.dataset.tab;
+            
+            // Update active states
+            tabs.forEach(t => t.classList.remove('active'));
+            contents.forEach(c => c.classList.remove('active'));
+            
+            tab.classList.add('active');
+            document.getElementById(tabName).classList.add('active');
+            
+            // Load data for the active tab
+            loadChartData(tabName);
+        });
+    });
+
+    // Chart creation functions
+    function createDevicesCharts(data) {
+        new Chart(document.getElementById('devicesByZoneChart'), {
+            type: 'bar',
+            data: {
+                labels: data.devicesByZone.labels,
+                datasets: data.devicesByZone.datasets.map((dataset, index) => ({
+                    label: dataset.label,
+                    data: dataset.data,
+                    backgroundColor: Object.values(chartColors)[index % Object.keys(chartColors).length],
+                    borderWidth: 1
+                }))
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        stacked: true
+                    },
+                    x: {
+						stacked: true
+                    }
+                },
+                plugins: {
+                    legend: {
+                        position: 'top'
+                    }
+                }
+            }
+        });
+
+        new Chart(document.getElementById('operationalStatusChart'), {
+            type: 'pie',
+            data: {
+                labels: data.operationalStatus.labels,
+                datasets: [{
+                    data: data.operationalStatus.data,
+                    backgroundColor: Object.values(chartColors)
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'right'
+                    }
+                }
+            }
+        });
+    }
+
+    function createMaintenanceCharts(data) {
+        new Chart(document.getElementById('maintenanceFrequencyChart'), {
+            type: 'bar',
+            data: {
+                labels: data.maintenanceFrequency.labels,
+                datasets: [{
+                    label: 'Número de Manutenções',
+                    data: data.maintenanceFrequency.data,
+                    backgroundColor: chartColors.blue,
+                    borderColor: chartColors.blueBorder,
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { stepSize: 1 }
+                    }
+                }
+            }
+        });
+    }
+
+    function createProblemsCharts(data) {
+        new Chart(document.getElementById('problemResolutionChart'), {
+            type: 'bar',
+            data: {
+                labels: data.problemResolution.labels,
+                datasets: [{
+                    label: 'Taxa de Resolução (%)',
+                    data: data.problemResolution.data,
+                    backgroundColor: chartColors.green,
+                    borderColor: chartColors.greenBorder,
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        ticks: {
+                            callback: value => value + '%'
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    function createServiceOrdersCharts(data) {
+        new Chart(document.getElementById('completionTimeChart'), {
+            type: 'bar',
+            data: {
+                labels: data.completionTime.labels,
+                datasets: [{
+                    label: 'Tempo Médio (horas)',
+                    data: data.completionTime.data,
+                    backgroundColor: chartColors.orange,
+                    borderColor: chartColors.orangeBorder,
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: value => value.toFixed(1) + 'h'
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    function createFinancialCharts(data) {
+        new Chart(document.getElementById('costsByZoneChart'), {
+            type: 'bar',
+            data: {
+                labels: data.costsByZone.labels,
+                datasets: [{
+                    label: 'Custo Total (R$)',
+                    data: data.costsByZone.data,
+                    backgroundColor: chartColors.blue,
+                    borderColor: chartColors.blueBorder,
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: value => 'R$ ' + value.toLocaleString('pt-BR')
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    function createGeographicalCharts(data) {
+        new Chart(document.getElementById('problemsByZoneChart'), {
+            type: 'bar',
+            data: {
+                labels: data.problemsByZone.labels,
+                datasets: [{
+                    label: 'Número de Problemas',
+                    data: data.problemsByZone.data,
+                    backgroundColor: chartColors.red,
+                    borderColor: chartColors.redBorder,
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { stepSize: 1 }
+                    }
+                }
+            }
+        });
+    }
+
+    function createUsersCharts(data) {
+        new Chart(document.getElementById('problemsByUserChart'), {
+            type: 'bar',
+            data: {
+                labels: data.problemsByUser.labels,
+                datasets: [{
+                    label: 'Problemas Reportados',
+                    data: data.problemsByUser.data,
+                    backgroundColor: chartColors.green,
+                    borderColor: chartColors.greenBorder,
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { stepSize: 1 }
+                    }
+                }
+            }
+        });
+    }
+
+    // Function to load chart data based on tab
+    function loadChartData(tabName) {
+        const chartCreators = {
+            'devices': createDevicesCharts,
+            'maintenance': createMaintenanceCharts,
+            'problems': createProblemsCharts,
+            'service-orders': createServiceOrdersCharts,
+            'financial': createFinancialCharts,
+            'geographical': createGeographicalCharts,
+            'users': createUsersCharts
+        };
+
+        fetch(`chart_data/${tabName}/`)
+            .then(response => response.json())
+            .then(data => {
+                if (chartCreators[tabName]) {
+                    chartCreators[tabName](data);
+                }
+            })
+            .catch(error => console.error('Error loading chart data:', error));
+    }
+
+    // Load initial tab data
+    loadChartData('devices');
+});
+</script>
+{% endblock %}
+                    

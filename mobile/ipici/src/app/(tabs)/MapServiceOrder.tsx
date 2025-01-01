@@ -132,7 +132,7 @@ const MapServiceOrders: React.FC = () => {
     const token = await AsyncStorage.getItem('access_token');
     setIsLoading(true);
     try {
-      const response = await axios.get<ServiceOrderType[]>('http://192.168.1.5:8000/api/service-orders/', {
+      const response = await axios.get<ServiceOrderType[]>('http://192.168.1.12:8001/api/service-orders/', {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (Array.isArray(response.data)) {
