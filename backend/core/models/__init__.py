@@ -8,4 +8,3 @@ from core.models.reported_problem import *
 from core.models.sensor import *
 from core.models.service_order import *
 from core.models.zone import *
-from core.models.report import *

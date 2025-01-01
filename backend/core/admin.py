@@ -7,9 +7,10 @@ from django.db.models.expressions import ExpressionWrapper
 from .forms import ZoneAdminForm
 from .models import (
     AuditLog, LightingDevice, Maintenance,
-    OperationalCost, ReportedProblem, Sensor, ServiceOrder, Zone, MailHistory, Address, Report
+    OperationalCost, ReportedProblem, Sensor, ServiceOrder, Zone, MailHistory, Address
 )
 from leaflet.admin import LeafletGeoAdmin
+from analytics.models import Report
 
 
 
