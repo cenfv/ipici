@@ -3,16 +3,20 @@ from django.contrib.auth.models import Group
 from django.utils.html import format_html
 from django.db import models
 from django.db.models import fields
-from django.db.models.expressions import ExpressionWrapper
 from .forms import ZoneAdminForm
-from .models import (
-    AuditLog, LightingDevice, Maintenance,
-    OperationalCost, ReportedProblem, Sensor, ServiceOrder, Zone, MailHistory, Address
-)
+
 from leaflet.admin import LeafletGeoAdmin
 from analytics.models import Report
+from datetime import date
+from django.db.models import Count, Avg, F, ExpressionWrapper, DurationField, Sum
+from django.http import JsonResponse
+from django.shortcuts import render
+from django.urls import path
 
-
+from .models import (
+    AuditLog, LightingDevice, Maintenance, OperationalCost, Sensor, ServiceOrder, Zone, MailHistory, Address,
+    Maintenance, ReportedProblem
+)
 
 try:
     from rest_framework.authtoken.models import TokenProxy as DRFToken
@@ -21,6 +25,7 @@ except ImportError:
 
 admin.site.unregister(Group)
 admin.site.unregister(DRFToken)
+
 
 # @admin.register(Country)
 # class CountryAdmin(admin.ModelAdmin):
@@ -47,6 +52,7 @@ class SensorInline(admin.TabularInline):
     model = Sensor
     extra = 1
 
+
 @admin.register(Maintenance)
 class MaintenanceAdmin(admin.ModelAdmin):
     list_display = ('device', 'maintenance_date', 'description', 'responsible_technician', 'operational_cost')
@@ -70,9 +76,11 @@ class ReportedProblemAdmin(admin.ModelAdmin):
 
 @admin.register(Sensor)
 class SensorAdmin(admin.ModelAdmin):
-    list_display = ('device', 'sensor_status', 'last_report_date', 'connection_type', 'firmware_version', 'battery_level')
+    list_display = (
+        'device', 'sensor_status', 'last_report_date', 'connection_type', 'firmware_version', 'battery_level')
     search_fields = ('device__number', 'sensor_status', 'connection_type', 'firmware_version')
     list_filter = ('sensor_status', 'connection_type')
+
 
 @admin.register(Address)
 class AddressAdmin(admin.ModelAdmin):
@@ -84,14 +92,16 @@ class AddressAdmin(admin.ModelAdmin):
 @admin.register(LightingDevice)
 class LightingDeviceAdmin(LeafletGeoAdmin):
     list_display = (
-    'code', 'owner', 'structural_name', 'type', 'height', 'material', 'installation_date', 'operational_status', 'qr_code', 'energy_source', 'zone', 'address')
+        'code', 'owner', 'structural_name', 'type', 'height', 'material', 'installation_date', 'operational_status',
+        'qr_code', 'energy_source', 'zone', 'address')
     search_fields = ('code', 'owner', 'structural_name', 'qr_code', 'energy_source')
     list_filter = ('type', 'operational_status', 'zone', 'address')
     inlines = [MaintenanceInline, OperationalCostInline, SensorInline]
     fieldsets = (
         (None, {
             'fields': (
-            'code', 'owner', 'structural_name', 'type', 'height', 'material', 'installation_date', 'address', 'zone', 'location')
+                'code', 'owner', 'structural_name', 'type', 'height', 'material', 'installation_date', 'address',
+                'zone', 'location')
         }),
         ('Operational Info', {
             'fields': ('operational_status', 'qr_code', 'energy_source', 'last_maintenance_date')
@@ -148,6 +158,7 @@ class ZoneAdmin(LeafletGeoAdmin):
         }),
     )
 
+
 @admin.register(MailHistory)
 class MailHistoryAdmin(admin.ModelAdmin):
     list_display = ('subject', 'recipient_list', 'sent_at', 'success', 'error_message', 'view_html_message')
@@ -161,6 +172,7 @@ class MailHistoryAdmin(admin.ModelAdmin):
             'border-radius: 5px; text-decoration: none;">Ver e-mail</a>',
             obj.get_html_preview_url()
         )
+
     view_html_message.short_description = "Visualização"
 
 
@@ -189,23 +201,6 @@ class SystemLogAdmin(admin.ModelAdmin):
         extra_context = extra_context or {}
         extra_context['show_add_button'] = False
         return super().changelist_view(request, extra_context)
-
-
-# file: admin/reports.py
-from django.contrib import admin
-from django.db.models import Count, Sum, Avg, F
-from django.db.models.functions import ExtractDay, Now
-from django.http import JsonResponse
-from django.shortcuts import render
-from django.urls import path
-
-from .models import (
-    Maintenance,
-    ReportedProblem,
-    OperationalCost,
-    LightingDevice,
-    Zone,
-)
 
 
 @admin.register(Report)
@@ -279,6 +274,31 @@ class ReportAdmin(admin.ModelAdmin):
             .order_by('operational_status')
         )
 
+        devices_by_type = (
+            queryset.values('type')
+            .annotate(count=Count('id'))
+            .order_by('type')
+        )
+        for device in devices_by_type:
+            device['type'] = TYPE_CHOICES_DICT.get(device['type'], device['type'])
+
+        # Calculate average age of devices by type
+        devices_age_by_type = (
+            queryset.values('type')
+            .annotate(
+                avg_age=Avg(
+                    ExpressionWrapper(
+                        date.today() - F('installation_date'),
+                        output_field=DurationField()
+                    )
+                )
+            )
+            .order_by('type')
+        )
+        for device in devices_age_by_type:
+            device['type'] = TYPE_CHOICES_DICT.get(device['type'], device['type'])
+            device['avg_age'] = device['avg_age'].days if device['avg_age'] else 0
+
         return {
             'devicesByZone': {
                 'labels': list(set([item['zone__name'] for item in devices_by_zone])),
@@ -295,11 +315,19 @@ class ReportAdmin(admin.ModelAdmin):
             'operationalStatus': {
                 'labels': [item['operational_status'] for item in operational_status],
                 'data': [item['count'] for item in operational_status]
+            },
+            'devicesByType': {
+                'labels': [item['type'] for item in devices_by_type],
+                'data': [item['count'] for item in devices_by_type]
+            },
+            'devicesAgeByType': {
+                'labels': [item['type'] for item in devices_age_by_type],
+                'data': [item['avg_age'] for item in devices_age_by_type]
             }
         }
 
     def get_maintenance_data(self, filters=None):
-        queryset = Maintenance.objects.select_related('device')
+        queryset = Maintenance.objects.select_related('device', 'responsible_technician')
         if filters:
             if 'zone' in filters and filters['zone']:
                 queryset = queryset.filter(device__zone__name=filters['zone'])
@@ -308,15 +336,48 @@ class ReportAdmin(admin.ModelAdmin):
             if 'date_to' in filters and filters['date_to']:
                 queryset = queryset.filter(maintenance_date__lte=filters['date_to'])
 
+        # Frequência de Manutenção por Dispositivo
         maintenance_frequency = (
-            queryset.annotate(count=Count('id'))
+            queryset.values('device__code')
+            .annotate(count=Count('id'))
             .order_by('-count')[:10]
+        )
+
+        # Tempo Médio Entre Manutenções
+        avg_time_between_maintenances = (
+            queryset.values('device__code')
+            .annotate(
+                avg_days=Avg(
+                    ExpressionWrapper(
+                        F('maintenance_date') - F('device__last_maintenance_date'),
+                        output_field=DurationField()
+                    )
+                )
+            )
+            .filter(avg_days__isnull=False)
+            .order_by('device__code')
+        )
+
+        # Distribuição de Manutenções por Técnico
+        maintenance_by_technician = (
+            queryset.values('responsible_technician__first_name')
+            .annotate(count=Count('id'))
+            .order_by('-count')
         )
 
         return {
             'maintenanceFrequency': {
-                'labels': [maintenance.device.__str__() for maintenance in maintenance_frequency],
-                'data': [maintenance.count for maintenance in maintenance_frequency],
+                'labels': [item['device__code'] for item in maintenance_frequency],
+                'data': [item['count'] for item in maintenance_frequency],
+            },
+            'avgTimeBetweenMaintenances': {
+                'labels': [item['device__code'] for item in avg_time_between_maintenances],
+                'data': [item['avg_days'].days if item['avg_days'] else 0 for item in avg_time_between_maintenances],
+            },
+            'maintenanceByTechnician': {
+                'labels': [item['responsible_technician__first_name'] or 'Desconhecido' for item in
+                           maintenance_by_technician],
+                'data': [item['count'] for item in maintenance_by_technician],
             }
         }
 

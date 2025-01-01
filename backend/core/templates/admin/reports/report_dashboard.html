@@ -53,6 +53,18 @@
 				<canvas id="operationalStatusChart"></canvas>
 			</div>
 		</div>
+		<div class="chart-container">
+			<h3 class="chart-title">Tipos de Dispositivos Instalados</h3>
+			<div class="chart-wrapper">
+				<canvas id="devicesByTypeChart"></canvas>
+			</div>
+		</div>
+		<div class="chart-container">
+			<h3 class="chart-title">Idade Média dos Dispositivos por Tipo</h3>
+			<div class="chart-wrapper">
+				<canvas id="devicesAgeByTypeChart"></canvas>
+			</div>
+		</div>
 	</div>
 	
 	<!-- Manutenção -->
@@ -77,10 +89,25 @@
 			</div>
 			<button class="reset-filters" onclick="resetFilters('maintenance')">Limpar Filtros</button>
 		</div>
+		
 		<div class="chart-container">
 			<h3 class="chart-title">Frequência de Manutenção por Dispositivo</h3>
 			<div class="chart-wrapper">
 				<canvas id="maintenanceFrequencyChart"></canvas>
+			</div>
+		</div>
+		
+		<div class="chart-container">
+			<h3 class="chart-title">Tempo Médio Entre Manutenções</h3>
+			<div class="chart-wrapper">
+				<canvas id="avgTimeBetweenMaintenancesChart"></canvas>
+			</div>
+		</div>
+		
+		<div class="chart-container">
+			<h3 class="chart-title">Distribuição de Manutenções por Técnico</h3>
+			<div class="chart-wrapper">
+				<canvas id="maintenanceByTechnicianChart"></canvas>
 			</div>
 		</div>
 	</div>
@@ -240,7 +267,11 @@
 			problemsByUserChart: null,
 			problemsOverviewChart: null,
 			problemOriginsChart: null,
-			deviceProblemsChart: null
+			deviceProblemsChart: null,
+			avgTimeBetweenMaintenancesChart: null,
+			maintenanceByTechnicianChart: null,
+			devicesByTypeChart: null,
+			devicesAgeByTypeChart: null
 		};
 		
 		window.resetFilters = function (tabName) {
@@ -374,6 +405,12 @@
 			if (chartInstances.operationalStatusChart) {
 				chartInstances.operationalStatusChart.destroy();
 			}
+			if (chartInstances.devicesByTypeChart) {
+				chartInstances.devicesByTypeChart.destroy();
+			}
+			if (chartInstances.devicesAgeByTypeChart) {
+				chartInstances.devicesAgeByTypeChart.destroy();
+			}
 			
 			chartInstances.devicesByZoneChart = new Chart(
 					document.getElementById('devicesByZoneChart'),
@@ -430,42 +467,71 @@
 					}
 			);
 			
-			new Chart(document.getElementById('maintenanceStatusChart'), {
-				type: 'bar',
-				data: {
-					labels: data.maintenanceStatus.labels,
-					datasets: data.maintenanceStatus.datasets.map((dataset, index) => ({
-						label: dataset.label === 'MANUTENCAO' ? 'Em Manutenção' : 'Falha Detectada',
-						data: dataset.data,
-						backgroundColor: Object.values(chartColors)[index],
-						borderWidth: 1
-					}))
-				},
-				options: {
-					responsive: true,
-					scales: {
-						y: {
-							beginAtZero: true,
-							stacked: true
+			chartInstances.devicesByTypeChart = new Chart(
+					document.getElementById('devicesByTypeChart'),
+					{
+						type: 'bar',
+						data: {
+							labels: data.devicesByType.labels,
+							datasets: [{
+								label: 'Quantidade',
+								data: data.devicesByType.data,
+								backgroundColor: Object.values(chartColors),
+								borderWidth: 1
+							}]
 						},
-						x: {
-							stacked: true
-						}
-					},
-					plugins: {
-						legend: {
-							position: 'top'
+						options: {
+							responsive: true,
+							scales: {
+								y: {beginAtZero: true}
+							},
+							plugins: {
+								legend: {position: 'top'}
+							}
 						}
 					}
-				}
-			});
+			);
+			
+			chartInstances.devicesAgeByTypeChart = new Chart(
+					document.getElementById('devicesAgeByTypeChart'),
+					{
+						type: 'bar', // Alterado de 'line' para 'bar'
+						data: {
+							labels: data.devicesAgeByType.labels,
+							datasets: [{
+								label: 'Idade Média (dias)',
+								data: data.devicesAgeByType.data,
+								backgroundColor: 'rgba(75, 192, 192, 0.2)',
+								borderColor: 'rgba(75, 192, 192, 1)',
+								borderWidth: 1
+							}]
+						},
+						options: {
+							responsive: true,
+							indexAxis: 'y', // Faz o gráfico ser horizontal
+							scales: {
+								x: {beginAtZero: true}
+							},
+							plugins: {
+								legend: {position: 'top'}
+							}
+						}
+					}
+			);
 		}
 		
 		function createMaintenanceCharts(data) {
 			if (chartInstances.maintenanceFrequencyChart) {
 				chartInstances.maintenanceFrequencyChart.destroy();
 			}
+			if (chartInstances.avgTimeBetweenMaintenancesChart) {
+				chartInstances.avgTimeBetweenMaintenancesChart.destroy();
+			}
+			if (chartInstances.maintenanceByTechnicianChart) {
+				chartInstances.maintenanceByTechnicianChart.destroy();
+			}
 			
+			// Gráfico de Frequência de Manutenção
 			chartInstances.maintenanceFrequencyChart = new Chart(
 					document.getElementById('maintenanceFrequencyChart'),
 					{
@@ -483,10 +549,52 @@
 						options: {
 							responsive: true,
 							scales: {
-								y: {
-									beginAtZero: true,
-									ticks: {stepSize: 1}
-								}
+								y: {beginAtZero: true, ticks: {stepSize: 1}}
+							}
+						}
+					}
+			);
+			
+			// Gráfico de Tempo Médio Entre Manutenções
+			chartInstances.avgTimeBetweenMaintenancesChart = new Chart(
+					document.getElementById('avgTimeBetweenMaintenancesChart'),
+					{
+						type: 'bar',
+						data: {
+							labels: data.avgTimeBetweenMaintenances.labels,
+							datasets: [{
+								label: 'Tempo Médio Entre Manutenções(dias)',
+								data: data.avgTimeBetweenMaintenances.data,
+								backgroundColor: chartColors.green,
+								borderColor: chartColors.greenBorder,
+								borderWidth: 1
+							}]
+						},
+						options: {
+							responsive: true,
+							scales: {
+								y: {beginAtZero: true}
+							}
+						}
+					}
+			);
+			
+			// Gráfico de Distribuição de Manutenções por Técnico
+			chartInstances.maintenanceByTechnicianChart = new Chart(
+					document.getElementById('maintenanceByTechnicianChart'),
+					{
+						type: 'pie',
+						data: {
+							labels: data.maintenanceByTechnician.labels,
+							datasets: [{
+								data: data.maintenanceByTechnician.data,
+								backgroundColor: Object.values(chartColors)
+							}]
+						},
+						options: {
+							responsive: true,
+							plugins: {
+								legend: {position: 'right'}
 							}
 						}
 					}
