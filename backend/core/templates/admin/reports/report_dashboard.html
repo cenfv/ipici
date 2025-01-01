@@ -6,9 +6,9 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <link rel="stylesheet" href="{% static 'admin/reports/report_dashboard.css' %}">
 {% endblock %}
+
 {% block content %}
 <div class="report-dashboard">
-	
 	<div class="report-tabs">
 		<button class="tab-button active" data-tab="devices">Dispositivos</button>
 		<button class="tab-button" data-tab="maintenance">Manutenção</button>
@@ -22,16 +22,27 @@
 	<!-- Dispositivos -->
 	<div id="devices" class="tab-content active">
 		<div class="filters">
-			<select id="zoneFilter">
+			<select id="deviceZoneFilter" class="filter-select">
 				<option value="">Todas as Zonas</option>
 				{% for zone in zones %}
 				<option value="{{ zone.name }}">{{ zone.name }}</option>
 				{% endfor %}
 			</select>
+			<select id="deviceTypeFilter" class="filter-select">
+				<option value="">Todos os Tipos</option>
+				{% for key, value in device_types.items %}
+				<option value="{{ key }}">{{ value }}</option>
+				{% endfor %}
+			</select>
+			<select id="deviceStatusFilter" class="filter-select">
+				<option value="">Todos os Status</option>
+				{% for key, value in operational_status.items %}
+				<option value="{{ key }}">{{ value }}</option>
+				{% endfor %}
+			</select>
 		</div>
 		<div class="chart-container">
 			<h3 class="chart-title">Distribuição de Dispositivos por Zona</h3>
-			
 			<div class="chart-wrapper">
 				<canvas id="devicesByZoneChart"></canvas>
 			</div>
@@ -46,6 +57,16 @@
 	
 	<!-- Manutenção -->
 	<div id="maintenance" class="tab-content">
+		<div class="filters">
+			<select id="maintenanceZoneFilter" class="filter-select">
+				<option value="">Todas as Zonas</option>
+				{% for zone in zones %}
+				<option value="{{ zone.name }}">{{ zone.name }}</option>
+				{% endfor %}
+			</select>
+			<input type="date" id="maintenanceDateFrom" class="filter-date" placeholder="Data Inicial">
+			<input type="date" id="maintenanceDateTo" class="filter-date" placeholder="Data Final">
+		</div>
 		<div class="chart-container">
 			<h3 class="chart-title">Frequência de Manutenção por Dispositivo</h3>
 			<div class="chart-wrapper">
@@ -56,6 +77,22 @@
 	
 	<!-- Problemas -->
 	<div id="problems" class="tab-content">
+		<div class="filters">
+			<select id="problemZoneFilter" class="filter-select">
+				<option value="">Todas as Zonas</option>
+				{% for zone in zones %}
+				<option value="{{ zone.name }}">{{ zone.name }}</option>
+				{% endfor %}
+			</select>
+			<select id="problemStatusFilter" class="filter-select">
+				<option value="">Todos os Status</option>
+				{% for key, value in problem_status.items %}
+				<option value="{{ key }}">{{ value }}</option>
+				{% endfor %}
+			</select>
+			<input type="date" id="problemDateFrom" class="filter-date" placeholder="Data Inicial">
+			<input type="date" id="problemDateTo" class="filter-date" placeholder="Data Final">
+		</div>
 		<div class="chart-container">
 			<h3 class="chart-title">Taxa de Resolução de Problemas por Zona</h3>
 			<div class="chart-wrapper">
@@ -66,6 +103,22 @@
 	
 	<!-- Ordens de Serviço -->
 	<div id="service-orders" class="tab-content">
+		<div class="filters">
+			<select id="orderZoneFilter" class="filter-select">
+				<option value="">Todas as Zonas</option>
+				{% for zone in zones %}
+				<option value="{{ zone.name }}">{{ zone.name }}</option>
+				{% endfor %}
+			</select>
+			<select id="orderPriorityFilter" class="filter-select">
+				<option value="">Todas as Prioridades</option>
+				{% for key, value in priorities.items %}
+				<option value="{{ key }}">{{ value }}</option>
+				{% endfor %}
+			</select>
+			<input type="date" id="orderDateFrom" class="filter-date" placeholder="Data Inicial">
+			<input type="date" id="orderDateTo" class="filter-date" placeholder="Data Final">
+		</div>
 		<div class="chart-container">
 			<h3 class="chart-title">Tempo Médio de Conclusão por Prioridade</h3>
 			<div class="chart-wrapper">
@@ -76,6 +129,22 @@
 	
 	<!-- Financeiro -->
 	<div id="financial" class="tab-content">
+		<div class="filters">
+			<select id="financialZoneFilter" class="filter-select">
+				<option value="">Todas as Zonas</option>
+				{% for zone in zones %}
+				<option value="{{ zone.name }}">{{ zone.name }}</option>
+				{% endfor %}
+			</select>
+			<select id="costTypeFilter" class="filter-select">
+				<option value="">Todos os Tipos de Custo</option>
+				{% for key, value in cost_types.items %}
+				<option value="{{ key }}">{{ value }}</option>
+				{% endfor %}
+			</select>
+			<input type="date" id="financialDateFrom" class="filter-date" placeholder="Data Inicial">
+			<input type="date" id="financialDateTo" class="filter-date" placeholder="Data Final">
+		</div>
 		<div class="chart-container">
 			<h3 class="chart-title">Custos Totais por Zona</h3>
 			<div class="chart-wrapper">
@@ -126,17 +195,115 @@
 			tab.addEventListener('click', () => {
 				const tabName = tab.dataset.tab;
 				
-				// Update active states
 				tabs.forEach(t => t.classList.remove('active'));
 				contents.forEach(c => c.classList.remove('active'));
 				
 				tab.classList.add('active');
 				document.getElementById(tabName).classList.add('active');
 				
-				// Load data for the active tab
 				loadChartData(tabName);
 			});
 		});
+		
+		// Add event listeners for all filters
+		const filters = document.querySelectorAll('.filter-select, .filter-date');
+		filters.forEach(filter => {
+			filter.addEventListener('change', () => {
+				const activeTab = document.querySelector('.tab-button.active').dataset.tab;
+				loadChartData(activeTab);
+			});
+		});
+		
+		function loadChartData(tabName) {
+			const queryParams = new URLSearchParams();
+			
+			switch (tabName) {
+				case 'devices':
+					const deviceZone = document.getElementById('deviceZoneFilter').value;
+					const deviceType = document.getElementById('deviceTypeFilter').value;
+					const deviceStatus = document.getElementById('deviceStatusFilter').value;
+					
+					if (deviceZone) queryParams.append('zone', deviceZone);
+					if (deviceType) queryParams.append('type', deviceType);
+					if (deviceStatus) queryParams.append('status', deviceStatus);
+					break;
+				
+				case 'maintenance':
+					const maintenanceZone = document.getElementById('maintenanceZoneFilter').value;
+					const maintenanceDateFrom = document.getElementById('maintenanceDateFrom').value;
+					const maintenanceDateTo = document.getElementById('maintenanceDateTo').value;
+					
+					if (maintenanceZone) queryParams.append('zone', maintenanceZone);
+					if (maintenanceDateFrom) queryParams.append('date_from', maintenanceDateFrom);
+					if (maintenanceDateTo) queryParams.append('date_to', maintenanceDateTo);
+					break;
+				
+				case 'problems':
+					const problemZone = document.getElementById('problemZoneFilter').value;
+					const problemStatus = document.getElementById('problemStatusFilter').value;
+					const problemDateFrom = document.getElementById('problemDateFrom').value;
+					const problemDateTo = document.getElementById('problemDateTo').value;
+					
+					if (problemZone) queryParams.append('zone', problemZone);
+					if (problemStatus) queryParams.append('status', problemStatus);
+					if (problemDateFrom) queryParams.append('date_from', problemDateFrom);
+					if (problemDateTo) queryParams.append('date_to', problemDateTo);
+					break;
+				
+				case 'service-orders':
+					const orderZone = document.getElementById('orderZoneFilter').value;
+					const orderPriority = document.getElementById('orderPriorityFilter').value;
+					const orderDateFrom = document.getElementById('orderDateFrom').value;
+					const orderDateTo = document.getElementById('orderDateTo').value;
+					
+					if (orderZone) queryParams.append('zone', orderZone);
+					if (orderPriority) queryParams.append('priority', orderPriority);
+					if (orderDateFrom) queryParams.append('date_from', orderDateFrom);
+					if (orderDateTo) queryParams.append('date_to', orderDateTo);
+					break;
+				
+				case 'financial':
+					const financialZone = document.getElementById('financialZoneFilter').value;
+					const costType = document.getElementById('costTypeFilter').value;
+					const financialDateFrom = document.getElementById('financialDateFrom').value;
+					const financialDateTo = document.getElementById('financialDateTo').value;
+					
+					if (financialZone) queryParams.append('zone', financialZone);
+					if (costType) queryParams.append('cost_type', costType);
+					if (financialDateFrom) queryParams.append('date_from', financialDateFrom);
+					if (financialDateTo) queryParams.append('date_to', financialDateTo);
+					break;
+			}
+			
+			fetch(`chart_data/${tabName}/?${queryParams.toString()}`)
+					.then(response => response.json())
+					.then(data => {
+						switch (tabName) {
+							case 'devices':
+								createDevicesCharts(data);
+								break;
+							case 'maintenance':
+								createMaintenanceCharts(data);
+								break;
+							case 'problems':
+								createProblemsCharts(data);
+								break;
+							case 'service-orders':
+								createServiceOrdersCharts(data);
+								break;
+							case 'financial':
+								createFinancialCharts(data);
+								break;
+							case 'geographical':
+								createGeographicalCharts(data);
+								break;
+							case 'users':
+								createUsersCharts(data);
+								break;
+						}
+					})
+					.catch(error => console.error('Error loading chart data:', error));
+		}
 		
 		// Chart creation functions
 		let deviceZoneChart = null;
@@ -353,37 +520,6 @@
 				}
 			});
 		}
-		
-		document.getElementById('zoneFilter').addEventListener('change', function () {
-			loadChartData('devices');
-		});
-		
-		// Function to load chart data based on tab
-		function loadChartData(tabName) {
-			const zoneFilter = document.getElementById('zoneFilter').value;
-			const queryParams = new URLSearchParams();
-			if (zoneFilter) queryParams.append('zone', zoneFilter);
-			
-			const chartCreators = {
-				'devices': createDevicesCharts,
-				'maintenance': createMaintenanceCharts,
-				'problems': createProblemsCharts,
-				'service-orders': createServiceOrdersCharts,
-				'financial': createFinancialCharts,
-				'geographical': createGeographicalCharts,
-				'users': createUsersCharts
-			};
-			
-			fetch(`chart_data/${tabName}/?${queryParams.toString()}`)
-					.then(response => response.json())
-					.then(data => {
-						if (chartCreators[tabName]) {
-							chartCreators[tabName](data);
-						}
-					})
-					.catch(error => console.error('Error loading chart data:', error));
-		}
-		
 		// Load initial tab data
 		loadChartData('devices');
 	});

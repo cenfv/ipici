@@ -220,6 +220,11 @@ class ReportAdmin(admin.ModelAdmin):
             'has_permission': True,
             'available_apps': self.admin_site.get_app_list(request),
             'zones': Zone.objects.all(),
+            'device_types': dict(LightingDevice.TYPE_CHOICES),
+            'operational_status': dict(LightingDevice.STATUS_CHOICES),
+            'priorities': dict(ServiceOrder.PRIORITY_CHOICES),
+            'problem_status': dict(ReportedProblem.PROBLEM_STATUS_CHOICES),
+            'cost_types': dict(OperationalCost.COST_TYPE_CHOICES),
         }
         return render(request, self.change_list_template, context)
 
@@ -249,10 +254,13 @@ class ReportAdmin(admin.ModelAdmin):
 
     def get_devices_data(self, filters=None):
         queryset = LightingDevice.objects.all()
-
         if filters:
-            if 'zone' in filters:
+            if 'zone' in filters and filters['zone']:
                 queryset = queryset.filter(zone__name=filters['zone'])
+            if 'type' in filters and filters['type']:
+                queryset = queryset.filter(type=filters['type'])
+            if 'status' in filters and filters['status']:
+                queryset = queryset.filter(operational_status=filters['status'])
 
         devices_by_zone = (
             queryset.values('zone__name', 'type')
@@ -290,10 +298,18 @@ class ReportAdmin(admin.ModelAdmin):
             }
         }
 
-    def get_maintenance_data(self):
+    def get_maintenance_data(self, filters=None):
+        queryset = Maintenance.objects.select_related('device')
+        if filters:
+            if 'zone' in filters and filters['zone']:
+                queryset = queryset.filter(device__zone__name=filters['zone'])
+            if 'date_from' in filters and filters['date_from']:
+                queryset = queryset.filter(maintenance_date__gte=filters['date_from'])
+            if 'date_to' in filters and filters['date_to']:
+                queryset = queryset.filter(maintenance_date__lte=filters['date_to'])
+
         maintenance_frequency = (
-            Maintenance.objects.select_related('device')
-            .annotate(count=Count('id'))
+            queryset.annotate(count=Count('id'))
             .order_by('-count')[:10]
         )
 
@@ -304,10 +320,20 @@ class ReportAdmin(admin.ModelAdmin):
             }
         }
 
-    def get_problems_data(self):
-        # Taxa de resolução de problemas por zona
+    def get_problems_data(self, filters=None):
+        queryset = ReportedProblem.objects.all()
+        if filters:
+            if 'zone' in filters and filters['zone']:
+                queryset = queryset.filter(device__zone__name=filters['zone'])
+            if 'status' in filters and filters['status']:
+                queryset = queryset.filter(status=filters['status'])
+            if 'date_from' in filters and filters['date_from']:
+                queryset = queryset.filter(report_date__date__gte=filters['date_from'])
+            if 'date_to' in filters and filters['date_to']:
+                queryset = queryset.filter(report_date__date__lte=filters['date_to'])
+
         total_problems = (
-            ReportedProblem.objects.values('device__zone__name')
+            queryset.values('device__zone__name')
             .annotate(
                 total=Count('id'),
                 resolved=Count('id', filter=models.Q(status='RESOLVIDO'))
@@ -326,11 +352,20 @@ class ReportAdmin(admin.ModelAdmin):
             }
         }
 
-    def get_service_orders_data(self):
-        # Tempo médio de conclusão por prioridade
+    def get_service_orders_data(self, filters=None):
+        queryset = ServiceOrder.objects.filter(status='CONCLUIDA')
+        if filters:
+            if 'zone' in filters and filters['zone']:
+                queryset = queryset.filter(device__zone__name=filters['zone'])
+            if 'priority' in filters and filters['priority']:
+                queryset = queryset.filter(priority=filters['priority'])
+            if 'date_from' in filters and filters['date_from']:
+                queryset = queryset.filter(creation_date__date__gte=filters['date_from'])
+            if 'date_to' in filters and filters['date_to']:
+                queryset = queryset.filter(creation_date__date__lte=filters['date_to'])
+
         completed_orders = (
-            ServiceOrder.objects.filter(status='CONCLUIDA')
-            .values('priority')
+            queryset.values('priority')
             .annotate(
                 avg_time=Avg(
                     ExpressionWrapper(
@@ -348,10 +383,20 @@ class ReportAdmin(admin.ModelAdmin):
             }
         }
 
-    def get_financial_data(self):
-        # Custos totais por zona
+    def get_financial_data(self, filters=None):
+        queryset = OperationalCost.objects.all()
+        if filters:
+            if 'zone' in filters and filters['zone']:
+                queryset = queryset.filter(device__zone__name=filters['zone'])
+            if 'cost_type' in filters and filters['cost_type']:
+                queryset = queryset.filter(cost_type=filters['cost_type'])
+            if 'date_from' in filters and filters['date_from']:
+                queryset = queryset.filter(date__gte=filters['date_from'])
+            if 'date_to' in filters and filters['date_to']:
+                queryset = queryset.filter(date__lte=filters['date_to'])
+
         costs_by_zone = (
-            OperationalCost.objects.values('device__zone__name')
+            queryset.values('device__zone__name')
             .annotate(total_cost=Sum('value'))
             .exclude(device__zone__isnull=True)
             .order_by('-total_cost')
@@ -399,17 +444,23 @@ class ReportAdmin(admin.ModelAdmin):
     def chart_data(self, request, report_type):
         filters = {
             'zone': request.GET.get('zone'),
+            'type': request.GET.get('type'),
+            'status': request.GET.get('status'),
+            'date_from': request.GET.get('date_from'),
+            'date_to': request.GET.get('date_to'),
+            'priority': request.GET.get('priority'),
+            'cost_type': request.GET.get('cost_type'),
         }
         filters = {k: v for k, v in filters.items() if v}
 
         data_functions = {
             'devices': lambda: self.get_devices_data(filters),
-            'maintenance': self.get_maintenance_data,
-            'problems': self.get_problems_data,
-            'service_orders': self.get_service_orders_data,
-            'financial': self.get_financial_data,
-            'geographical': self.get_geographical_data,
-            'users': self.get_users_data,
+            'maintenance': lambda: self.get_maintenance_data(filters),
+            'problems': lambda: self.get_problems_data(filters),
+            'service_orders': lambda: self.get_service_orders_data(filters),
+            'financial': lambda: self.get_financial_data(filters),
+            'geographical': lambda: self.get_geographical_data(),
+            'users': lambda: self.get_users_data(),
         }
 
         if report_type in data_functions:
