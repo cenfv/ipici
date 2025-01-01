@@ -212,6 +212,22 @@ from .models import (
 class ReportAdmin(admin.ModelAdmin):
     change_list_template = 'admin/reports/report_dashboard.html'
 
+    def get_report_view(self, request):
+        context = {
+            'title': 'Dashboard de Relatórios',
+            **self.admin_site.each_context(request),
+            'is_nav_sidebar_enabled': True,
+            'has_permission': True,
+            'available_apps': self.admin_site.get_app_list(request),
+            'zones': Zone.objects.all(),
+        }
+        return render(request, self.change_list_template, context)
+
+    def changelist_view(self, request, extra_context=None):
+        extra_context = extra_context or {}
+        extra_context['zones'] = Zone.objects.all()
+        return super().changelist_view(request, extra_context)
+
     def has_add_permission(self, request):
         return False
 
@@ -224,16 +240,6 @@ class ReportAdmin(admin.ModelAdmin):
     def changelist_view(self, request, extra_context=None):
         return self.get_report_view(request)
 
-    def get_report_view(self, request):
-        context = {
-            'title': 'Dashboard de Relatórios',
-            **self.admin_site.each_context(request),
-            'is_nav_sidebar_enabled': True,
-            'has_permission': True,
-            'available_apps': self.admin_site.get_app_list(request),
-        }
-        return render(request, self.change_list_template, context)
-
     def get_urls(self):
         urls = super().get_urls()
         custom_urls = [
@@ -241,18 +247,26 @@ class ReportAdmin(admin.ModelAdmin):
         ]
         return custom_urls + urls
 
-    def get_devices_data(self):
-        # Distribuição dos tipos de dispositivos por zona
+    def get_devices_data(self, filters=None):
+        queryset = LightingDevice.objects.all()
+
+        if filters:
+            if 'zone' in filters:
+                queryset = queryset.filter(zone__name=filters['zone'])
+
         devices_by_zone = (
-            LightingDevice.objects.values('zone__name', 'type')
+            queryset.values('zone__name', 'type')
             .annotate(count=Count('id'))
             .exclude(zone__isnull=True)
             .order_by('zone__name', 'type')
         )
 
-        # Status operacional dos dispositivos
+        TYPE_CHOICES_DICT = dict(LightingDevice.TYPE_CHOICES)
+        for device in devices_by_zone:
+            device['type'] = TYPE_CHOICES_DICT.get(device['type'], device['type'])
+
         operational_status = (
-            LightingDevice.objects.values('operational_status')
+            queryset.values('operational_status')
             .annotate(count=Count('id'))
             .order_by('operational_status')
         )
@@ -277,17 +291,16 @@ class ReportAdmin(admin.ModelAdmin):
         }
 
     def get_maintenance_data(self):
-        # Frequência de manutenção por dispositivo
         maintenance_frequency = (
-            Maintenance.objects.values('device__structural_name')
+            Maintenance.objects.select_related('device')
             .annotate(count=Count('id'))
             .order_by('-count')[:10]
         )
 
         return {
             'maintenanceFrequency': {
-                'labels': [item['device__structural_name'] for item in maintenance_frequency],
-                'data': [item['count'] for item in maintenance_frequency]
+                'labels': [maintenance.device.__str__() for maintenance in maintenance_frequency],
+                'data': [maintenance.count for maintenance in maintenance_frequency],
             }
         }
 
@@ -384,8 +397,13 @@ class ReportAdmin(admin.ModelAdmin):
         }
 
     def chart_data(self, request, report_type):
+        filters = {
+            'zone': request.GET.get('zone'),
+        }
+        filters = {k: v for k, v in filters.items() if v}
+
         data_functions = {
-            'devices': self.get_devices_data,
+            'devices': lambda: self.get_devices_data(filters),
             'maintenance': self.get_maintenance_data,
             'problems': self.get_problems_data,
             'service_orders': self.get_service_orders_data,
