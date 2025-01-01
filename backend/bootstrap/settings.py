@@ -118,6 +118,7 @@ JAZZMIN_SETTINGS = {
         "core.ServiceOrder": "fas fa-file-alt",
         "core.Zone": "fas fa-map-marker-alt",
         "core.MailHistory": "fas fa-envelope",
+        "core.Report": "fas fa-chart-line",
     },
     "hide_models": [
         "maps.mapdummy",
@@ -140,6 +141,11 @@ JAZZMIN_SETTINGS = {
 
         ]
     },
+    "order_with_respect_to": [
+            "accounts",
+            "maps",
+            "core",
+    ],
 }
 
 
