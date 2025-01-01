@@ -74,6 +74,8 @@ MIDDLEWARE = [
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'api.middlewares.csrf_middleware.DisableCSRFMiddleware',
     'api.middlewares.session_middleware.DisableSessionForAPI',
+    'core.middleware.CurrentUserMiddleware',
+
 ]
 
 ROOT_URLCONF = 'bootstrap.urls'

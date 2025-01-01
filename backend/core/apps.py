@@ -6,3 +6,5 @@ class CoreConfig(AppConfig):
     name = 'core'
     verbose_name = 'Parametrização do Sistema'
 
+    def ready(self):
+        import core.signals

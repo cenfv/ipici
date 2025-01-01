@@ -17,13 +17,6 @@ except ImportError:
 admin.site.unregister(Group)
 admin.site.unregister(DRFToken)
 
-@admin.register(AuditLog)
-class AuditLogAdmin(admin.ModelAdmin):
-    list_display = ('user', 'action', 'description', 'timestamp')
-    search_fields = ('user__email', 'action', 'description')
-    list_filter = ('action', 'timestamp')
-
-
 # @admin.register(Country)
 # class CountryAdmin(admin.ModelAdmin):
 #     list_display = ('name', 'code')
@@ -167,3 +160,30 @@ class MailHistoryAdmin(admin.ModelAdmin):
             obj.get_html_preview_url()
         )
     view_html_message.short_description = "Visualização"
+
+
+@admin.register(AuditLog)
+class SystemLogAdmin(admin.ModelAdmin):
+    list_display = ('timestamp', 'action', 'get_user_display', 'content_type', 'object_repr')
+    list_filter = ('action', 'content_type', 'timestamp', 'user')
+    search_fields = ('object_repr', 'user__email')
+    readonly_fields = ('timestamp', 'action', 'user', 'content_type', 'object_id', 'object_repr', 'changes')
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    def get_user_display(self, obj):
+        return obj.get_user_display()
+
+    get_user_display.short_description = 'Usuário'
+
+    def changelist_view(self, request, extra_context=None):
+        extra_context = extra_context or {}
+        extra_context['show_add_button'] = False
+        return super().changelist_view(request, extra_context)
