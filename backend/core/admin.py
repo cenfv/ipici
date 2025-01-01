@@ -9,12 +9,13 @@ from leaflet.admin import LeafletGeoAdmin
 from analytics.models import Report
 from datetime import date
 from django.db.models import Count, Avg, F, ExpressionWrapper, DurationField, Sum
+from django.db.models.functions import TruncMonth
 from django.http import JsonResponse
 from django.shortcuts import render
 from django.urls import path
 
 from .models import (
-    AuditLog, LightingDevice, Maintenance, OperationalCost, Sensor, ServiceOrder, Zone, MailHistory, Address,
+    AuditLog, LightingDevice, OperationalCost, Sensor, ServiceOrder, Zone, MailHistory, Address,
     Maintenance, ReportedProblem
 )
 
@@ -461,7 +462,9 @@ class ReportAdmin(admin.ModelAdmin):
         }
 
     def get_service_orders_data(self, filters=None):
-        queryset = ServiceOrder.objects.filter(status='CONCLUIDA')
+        queryset = ServiceOrder.objects.all()
+
+        # Filtragem por filtros opcionais
         if filters:
             if 'zone' in filters and filters['zone']:
                 queryset = queryset.filter(device__zone__name=filters['zone'])
@@ -472,8 +475,10 @@ class ReportAdmin(admin.ModelAdmin):
             if 'date_to' in filters and filters['date_to']:
                 queryset = queryset.filter(creation_date__date__lte=filters['date_to'])
 
+        # Tempo Médio de Conclusão por Prioridade
         completed_orders = (
-            queryset.values('priority')
+            queryset.filter(status='CONCLUIDA')
+            .values('priority')
             .annotate(
                 avg_time=Avg(
                     ExpressionWrapper(
@@ -484,15 +489,66 @@ class ReportAdmin(admin.ModelAdmin):
             )
         )
 
+        # Status Atual das Ordens de Serviço
+        status_counts = queryset.values('status').annotate(count=Count('id'))
+
+        # Ordens Abertas por Técnico Responsável
+        open_orders_by_technician = (
+            queryset.filter(status='ABERTA')
+            .values('responsible__first_name')
+            .annotate(count=Count('id'))
+        )
+
+        # Status Atual por Prioridade
+        priorities = [choice[0] for choice in ServiceOrder.PRIORITY_CHOICES]
+        statuses = [choice[0] for choice in ServiceOrder.STATUS_CHOICES]
+
+        status_by_priority = (
+            queryset.values('priority', 'status')
+            .annotate(count=Count('id'))
+            .order_by('priority', 'status')
+        )
+
+        # Organizar dados para gráfico de Status Atual por Prioridade
+        status_priority_data = {priority: [0] * len(statuses) for priority in priorities}
+        for item in status_by_priority:
+            priority = item['priority']
+            status = item['status']
+            count = item['count']
+            if priority in priorities and status in statuses:
+                status_priority_data[priority][statuses.index(status)] = count
+
+        if not any(status_priority_data.values()):
+            print("status_priority_data está vazio:", status_priority_data)
+
         return {
             'completionTime': {
                 'labels': [item['priority'] for item in completed_orders],
                 'data': [item['avg_time'].total_seconds() / 3600 for item in completed_orders]
+            },
+            'statusCounts': {
+                'labels': [item['status'] for item in status_counts],
+                'data': [item['count'] for item in status_counts]
+            },
+            'openOrdersByTechnician': {
+                'labels': [item['responsible__first_name'] or 'Não Atribuído' for item in open_orders_by_technician],
+                'data': [item['count'] for item in open_orders_by_technician]
+            },
+            'statusByPriority': {
+                'labels': statuses,
+                'datasets': [
+                    {
+                        'label': dict(ServiceOrder.PRIORITY_CHOICES).get(priority),
+                        'data': status_priority_data[priority] if status_priority_data[priority] else [0] * len(
+                            statuses)
+                    } for priority in priorities
+                ]
             }
         }
 
     def get_financial_data(self, filters=None):
         queryset = OperationalCost.objects.all()
+
         if filters:
             if 'zone' in filters and filters['zone']:
                 queryset = queryset.filter(device__zone__name=filters['zone'])
@@ -510,10 +566,42 @@ class ReportAdmin(admin.ModelAdmin):
             .order_by('-total_cost')
         )
 
+        costs_by_type = (
+            queryset.values('cost_type')
+            .annotate(total_cost=Sum('value'))
+            .order_by('-total_cost')
+        )
+
+        avg_maintenance_cost_by_device_type = (
+            queryset.filter(cost_type='MANUTENCAO')
+            .values('device__type')
+            .annotate(avg_cost=Avg('value'))
+            .order_by('-avg_cost')
+        )
+
+        monthly_cost_evolution = (
+            queryset.annotate(month=TruncMonth('date'))
+            .values('month')
+            .annotate(total_cost=Sum('value'))
+            .order_by('month')
+        )
+
         return {
             'costsByZone': {
                 'labels': [item['device__zone__name'] for item in costs_by_zone],
                 'data': [float(item['total_cost']) for item in costs_by_zone]
+            },
+            'costsByType': {
+                'labels': [item['cost_type'] for item in costs_by_type],
+                'data': [float(item['total_cost']) for item in costs_by_type]
+            },
+            'avgMaintenanceCostByDeviceType': {
+                'labels': [item['device__type'] for item in avg_maintenance_cost_by_device_type],
+                'data': [float(item['avg_cost']) for item in avg_maintenance_cost_by_device_type]
+            },
+            'monthlyCostEvolution': {
+                'labels': [item['month'].strftime('%Y-%m') for item in monthly_cost_evolution],
+                'data': [float(item['total_cost']) for item in monthly_cost_evolution]
             }
         }
 
@@ -565,7 +653,7 @@ class ReportAdmin(admin.ModelAdmin):
             'devices': lambda: self.get_devices_data(filters),
             'maintenance': lambda: self.get_maintenance_data(filters),
             'problems': lambda: self.get_problems_data(filters),
-            'service_orders': lambda: self.get_service_orders_data(filters),
+            'service-orders': lambda: self.get_service_orders_data(filters),
             'financial': lambda: self.get_financial_data(filters),
             'geographical': lambda: self.get_geographical_data(),
             'users': lambda: self.get_users_data(),

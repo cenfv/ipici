@@ -194,10 +194,32 @@
 				<canvas id="completionTimeChart"></canvas>
 			</div>
 		</div>
+		
+		<div id="statusCounts" class="chart-container">
+			<h3 class="chart-title">Status Atual das Ordens de Serviço</h3>
+			<div class="chart-wrapper">
+				<canvas id="statusCountsChart"></canvas>
+			</div>
+		</div>
+		
+		<div id="statusByPriority" class="chart-container">
+			<h3 class="chart-title">Status Atual das Ordens de Serviço por Prioridade</h3>
+			<div class="chart-wrapper">
+				<canvas id="statusByPriorityChart"></canvas>
+			</div>
+		</div>
+		
+		<div id="openOrdersByTechnician" class="chart-container">
+			<h3 class="chart-title">Ordens Abertas por Técnico Responsável</h3>
+			<div class="chart-wrapper">
+				<canvas id="openOrdersByTechnicianChart"></canvas>
+			</div>
+		</div>
 	</div>
 	
 	<!-- Financeiro -->
 	<div id="financial" class="tab-content">
+		<!-- Filtros -->
 		<div class="filters">
 			<select id="financialZoneFilter" class="filter-select">
 				<option value="">Todas as Zonas</option>
@@ -214,10 +236,36 @@
 			<input type="date" id="financialDateFrom" class="filter-date" placeholder="Data Inicial">
 			<input type="date" id="financialDateTo" class="filter-date" placeholder="Data Final">
 		</div>
+		
+		<!-- Custos Totais por Zona -->
 		<div class="chart-container">
 			<h3 class="chart-title">Custos Totais por Zona</h3>
 			<div class="chart-wrapper">
 				<canvas id="costsByZoneChart"></canvas>
+			</div>
+		</div>
+		
+		<!-- Distribuição de Custos por Tipo -->
+		<div class="chart-container">
+			<h3 class="chart-title">Distribuição de Custos por Tipo</h3>
+			<div class="chart-wrapper">
+				<canvas id="costsByTypeChart"></canvas>
+			</div>
+		</div>
+		
+		<!-- Custo Médio de Manutenção por Tipo de Dispositivo -->
+		<div class="chart-container">
+			<h3 class="chart-title">Custo Médio de Manutenção por Tipo de Dispositivo</h3>
+			<div class="chart-wrapper">
+				<canvas id="avgMaintenanceCostByDeviceTypeChart"></canvas>
+			</div>
+		</div>
+		
+		<!-- Evolução Mensal dos Custos Totais -->
+		<div class="chart-container">
+			<h3 class="chart-title">Evolução Mensal dos Custos Totais</h3>
+			<div class="chart-wrapper">
+				<canvas id="monthlyCostEvolutionChart"></canvas>
 			</div>
 		</div>
 	</div>
@@ -253,7 +301,12 @@
 			orange: 'rgba(255, 159, 64, 0.5)',
 			orangeBorder: 'rgba(255, 159, 64, 1)',
 			red: 'rgba(255, 99, 132, 0.5)',
-			redBorder: 'rgba(255, 99, 132, 1)'
+			redBorder: 'rgba(255, 99, 132, 1)',
+			statusColors: {
+				ABERTA: 'rgba(255, 159, 64, 0.5)', // Laranja
+				EM_ANDAMENTO: 'rgba(54, 162, 235, 0.5)', // Azul
+				CONCLUIDA: 'rgba(75, 192, 192, 0.5)' // Verde
+			}
 		};
 		
 		const chartInstances = {
@@ -271,7 +324,16 @@
 			avgTimeBetweenMaintenancesChart: null,
 			maintenanceByTechnicianChart: null,
 			devicesByTypeChart: null,
-			devicesAgeByTypeChart: null
+			devicesAgeByTypeChart: null,
+			statusChart: null,
+			responsibleOrdersChart: null,
+			statusCountsChart: null,
+			openOrdersByTechnicianChart: null,
+			statusByPriorityChart: null,
+			costsByTypeChart: null,
+			avgMaintenanceCostByDeviceTypeChart: null,
+			monthlyCostEvolutionChart: null
+			
 		};
 		
 		window.resetFilters = function (tabName) {
@@ -602,171 +664,241 @@
 		}
 		
 		function createProblemsCharts(data) {
-			if (chartInstances.problemResolutionChart) {
-				chartInstances.problemResolutionChart.destroy();
-			}
-			if (chartInstances.problemsOverviewChart) {
-				chartInstances.problemsOverviewChart.destroy();
-			}
-			if (chartInstances.problemOriginsChart) {
-				chartInstances.problemOriginsChart.destroy();
-			}
-			if (chartInstances.deviceProblemsChart) {
-				chartInstances.deviceProblemsChart.destroy();
-			}
-			
-			chartInstances.problemsOverviewChart = new Chart(
-					document.getElementById('problemsOverviewChart'),
-					{
-						type: 'bar',
-						data: {
-							labels: data.problemsOverview.labels,
-							datasets: data.problemsOverview.datasets.map((dataset, index) => ({
-								label: dataset.label,
-								data: dataset.data,
-								backgroundColor: Object.values(chartColors)[index % Object.keys(chartColors).length],
-								borderColor: Object.values(chartColors).map(color => color.replace('0.5', '1'))[index % Object.keys(chartColors).length],
-								borderWidth: 1
-							}))
-						},
-						options: {
-							responsive: true,
-							scales: {
-								y: {
-									beginAtZero: true,
-									stacked: true
-								},
-								x: {
-									stacked: true
-								}
+			try {
+				if (chartInstances.problemResolutionChart) chartInstances.problemResolutionChart.destroy();
+				if (chartInstances.problemsOverviewChart) chartInstances.problemsOverviewChart.destroy();
+				if (chartInstances.problemOriginsChart) chartInstances.problemOriginsChart.destroy();
+				if (chartInstances.deviceProblemsChart) chartInstances.deviceProblemsChart.destroy();
+				
+				// Filtrar apenas as cores válidas
+				const chartColorsValues = Object.values(chartColors).filter(color => typeof color === 'string' && color.includes('rgba'));
+				
+				// Gráfico de Visão Geral dos Problemas
+				chartInstances.problemsOverviewChart = new Chart(
+						document.getElementById('problemsOverviewChart'),
+						{
+							type: 'bar',
+							data: {
+								labels: data.problemsOverview.labels,
+								datasets: data.problemsOverview.datasets.map((dataset, index) => ({
+									label: dataset.label,
+									data: dataset.data,
+									backgroundColor: chartColorsValues[index % chartColorsValues.length],
+									borderColor: chartColorsValues[index % chartColorsValues.length].replace('0.5', '1'),
+									borderWidth: 1
+								}))
 							},
-							plugins: {
-								legend: {
-									position: 'top'
+							options: {
+								responsive: true,
+								scales: {
+									y: {beginAtZero: true, stacked: true},
+									x: {stacked: true}
+								},
+								plugins: {
+									legend: {position: 'top'}
 								}
 							}
 						}
-					}
-			);
-			
-			chartInstances.problemResolutionChart = new Chart(
-					document.getElementById('problemResolutionChart'),
-					{
-						type: 'bar',
-						data: {
-							labels: data.problemResolution.labels,
-							datasets: [{
-								label: 'Taxa de Resolução (%)',
-								data: data.problemResolution.data,
-								backgroundColor: chartColors.green,
-								borderColor: chartColors.greenBorder,
-								borderWidth: 1
-							}]
-						},
-						options: {
-							responsive: true,
-							scales: {
-								y: {
-									beginAtZero: true,
-									max: 100,
-									ticks: {
-										callback: value => value + '%'
+				);
+				
+				// Gráfico de Taxa de Resolução de Problemas
+				chartInstances.problemResolutionChart = new Chart(
+						document.getElementById('problemResolutionChart'),
+						{
+							type: 'bar',
+							data: {
+								labels: data.problemResolution.labels,
+								datasets: [{
+									label: 'Taxa de Resolução (%)',
+									data: data.problemResolution.data,
+									backgroundColor: chartColors.green,
+									borderColor: chartColors.greenBorder,
+									borderWidth: 1
+								}]
+							},
+							options: {
+								responsive: true,
+								scales: {
+									y: {
+										beginAtZero: true,
+										max: 100,
+										ticks: {
+											callback: value => value + '%'
+										}
 									}
 								}
 							}
 						}
-					}
-			);
-			chartInstances.problemOriginsChart = new Chart(
-					document.getElementById('problemOriginsChart'),
-					{
-						type: 'pie',
-						data: {
-							labels: data.problemOrigins.labels,
-							datasets: [{
-								data: data.problemOrigins.data,
-								backgroundColor: Object.values(chartColors)
-							}]
-						},
-						options: {
-							responsive: true,
-							plugins: {
-								legend: {
-									position: 'right'
+				);
+				
+				// Gráfico de Origem dos Problemas
+				chartInstances.problemOriginsChart = new Chart(
+						document.getElementById('problemOriginsChart'),
+						{
+							type: 'pie',
+							data: {
+								labels: data.problemOrigins.labels,
+								datasets: [{
+									data: data.problemOrigins.data,
+									backgroundColor: chartColorsValues
+								}]
+							},
+							options: {
+								responsive: true,
+								plugins: {
+									legend: {position: 'right'}
 								}
 							}
 						}
-					}
-			);
-			
-			chartInstances.deviceProblemsChart = new Chart(
-					document.getElementById('deviceProblemsChart'),
-					{
-						type: 'bar',
-						data: {
-							labels: data.deviceProblems.labels,
-							datasets: [{
-								label: 'Número de Problemas',
-								data: data.deviceProblems.data,
-								backgroundColor: chartColors.orange,
-								borderColor: chartColors.orangeBorder,
-								borderWidth: 1
-							}]
-						},
-						options: {
-							responsive: true,
-							scales: {
-								y: {
-									beginAtZero: true,
-									ticks: {
-										stepSize: 1
+				);
+				
+				// Gráfico de Problemas por Dispositivo
+				chartInstances.deviceProblemsChart = new Chart(
+						document.getElementById('deviceProblemsChart'),
+						{
+							type: 'bar',
+							data: {
+								labels: data.deviceProblems.labels,
+								datasets: [{
+									label: 'Número de Problemas',
+									data: data.deviceProblems.data,
+									backgroundColor: chartColors.orange,
+									borderColor: chartColors.orangeBorder,
+									borderWidth: 1
+								}]
+							},
+							options: {
+								responsive: true,
+								scales: {
+									y: {
+										beginAtZero: true,
+										ticks: {stepSize: 1}
 									}
 								}
 							}
 						}
-					}
-			);
+				);
+			} catch (error) {
+				console.error("Erro ao carregar os gráficos de problemas:", error);
+			}
 		}
 		
 		function createServiceOrdersCharts(data) {
-			if (chartInstances.completionTimeChart) {
-				chartInstances.completionTimeChart.destroy();
-			}
-			
-			chartInstances.completionTimeChart = new Chart(
-					document.getElementById('completionTimeChart'),
-					{
-						type: 'bar',
-						data: {
-							labels: data.completionTime.labels,
-							datasets: [{
-								label: 'Tempo Médio (horas)',
-								data: data.completionTime.data,
-								backgroundColor: chartColors.orange,
-								borderColor: chartColors.orangeBorder,
-								borderWidth: 1
-							}]
-						},
-						options: {
-							responsive: true,
-							scales: {
-								y: {
-									beginAtZero: true,
-									ticks: {
-										callback: value => value.toFixed(1) + 'h'
+			try {
+				if (!data || typeof data !== 'object') {
+					throw new Error("Dados inválidos recebidos para os gráficos.");
+				}
+				
+				// Destroy gráficos antigos
+				if (chartInstances.completionTimeChart) chartInstances.completionTimeChart.destroy();
+				if (chartInstances.statusCountsChart) chartInstances.statusCountsChart.destroy();
+				if (chartInstances.openOrdersByTechnicianChart) chartInstances.openOrdersByTechnicianChart.destroy();
+				if (chartInstances.statusByPriorityChart) chartInstances.statusByPriorityChart.destroy();
+				
+				// Gráfico de Status Atual por Prioridade
+				if (data.statusByPriority && data.statusByPriority.datasets.length > 0) {
+					const priorityColors = ['#FF6384', '#36A2EB', '#FFCE56']; // Cores para cada prioridade
+					
+					chartInstances.statusByPriorityChart = new Chart(
+							document.getElementById('statusByPriorityChart'),
+							{
+								type: 'bar',
+								data: {
+									labels: data.statusByPriority.labels,
+									datasets: data.statusByPriority.datasets.map((dataset, idx) => ({
+										label: dataset.label,
+										data: dataset.data,
+										backgroundColor: priorityColors[idx],
+										borderColor: priorityColors[idx],
+										borderWidth: 1
+									}))
+								},
+								options: {
+									responsive: true,
+									plugins: {
+										tooltip: {
+											callbacks: {
+												label: function (tooltipItem) {
+													return `${tooltipItem.dataset.label}: ${tooltipItem.raw} ordens`;
+												}
+											}
+										}
+									},
+									scales: {
+										x: {stacked: true},
+										y: {stacked: true, beginAtZero: true}
 									}
 								}
 							}
+					);
+				} else {
+					console.warn("Nenhum dado disponível para o gráfico 'Status Atual por Prioridade'.");
+				}
+				
+				// Outros gráficos
+				chartInstances.completionTimeChart = new Chart(
+						document.getElementById('completionTimeChart'),
+						{
+							type: 'bar',
+							data: {
+								labels: data.completionTime.labels,
+								datasets: [{
+									label: 'Tempo Médio (horas)',
+									data: data.completionTime.data,
+									backgroundColor: '#FFA500'
+								}]
+							},
+							options: {
+								responsive: true,
+								scales: {
+									y: {beginAtZero: true, ticks: {callback: value => value.toFixed(1) + 'h'}}
+								}
+							}
 						}
-					}
-			);
+				);
+				
+				chartInstances.statusCountsChart = new Chart(
+						document.getElementById('statusCountsChart'),
+						{
+							type: 'pie',
+							data: {
+								labels: data.statusCounts.labels,
+								datasets: [{
+									data: data.statusCounts.data,
+									backgroundColor: data.statusCounts.labels.map(label => chartColors.statusColors[label] || chartColors.red),
+								}]
+							},
+							options: {responsive: true}
+						}
+				);
+				
+				chartInstances.openOrdersByTechnicianChart = new Chart(
+						document.getElementById('openOrdersByTechnicianChart'),
+						{
+							type: 'bar',
+							data: {
+								labels: data.openOrdersByTechnician.labels,
+								datasets: [{
+									label: 'Ordens Abertas',
+									data: data.openOrdersByTechnician.data,
+									backgroundColor: '#36A2EB'
+								}]
+							},
+							options: {
+								responsive: true,
+								scales: {
+									y: {beginAtZero: true}
+								}
+							}
+						}
+				);
+			} catch (error) {
+				console.error("Erro ao carregar os dados do gráfico:", error);
+			}
 		}
 		
 		function createFinancialCharts(data) {
-			if (chartInstances.costsByZoneChart) {
-				chartInstances.costsByZoneChart.destroy();
-			}
-			
+			if (chartInstances.costsByZoneChart) chartInstances.costsByZoneChart.destroy();
 			chartInstances.costsByZoneChart = new Chart(
 					document.getElementById('costsByZoneChart'),
 					{
@@ -779,6 +911,82 @@
 								backgroundColor: chartColors.blue,
 								borderColor: chartColors.blueBorder,
 								borderWidth: 1
+							}]
+						},
+						options: {
+							responsive: true,
+							scales: {
+								y: {
+									beginAtZero: true,
+									ticks: {
+										callback: value => 'R$ ' + value.toLocaleString('pt-BR')
+									}
+								}
+							}
+						}
+					}
+			);
+			
+			if (chartInstances.costsByTypeChart) chartInstances.costsByTypeChart.destroy();
+			chartInstances.costsByTypeChart = new Chart(
+					document.getElementById('costsByTypeChart'),
+					{
+						type: 'pie',
+						data: {
+							labels: data.costsByType.labels,
+							datasets: [{
+								label: 'Proporção de Custos',
+								data: data.costsByType.data,
+								backgroundColor: chartColors.pieColors
+							}]
+						},
+						options: {responsive: true}
+					}
+			);
+			
+			if (chartInstances.avgMaintenanceCostByDeviceTypeChart) chartInstances.avgMaintenanceCostByDeviceTypeChart.destroy();
+			chartInstances.avgMaintenanceCostByDeviceTypeChart = new Chart(
+					document.getElementById('avgMaintenanceCostByDeviceTypeChart'),
+					{
+						type: 'bar',
+						data: {
+							labels: data.avgMaintenanceCostByDeviceType.labels,
+							datasets: [{
+								label: 'Custo Médio (R$)',
+								data: data.avgMaintenanceCostByDeviceType.data,
+								backgroundColor: chartColors.green,
+								borderColor: chartColors.greenBorder,
+								borderWidth: 1
+							}]
+						},
+						options: {
+							responsive: true,
+							scales: {
+								y: {
+									beginAtZero: true,
+									ticks: {
+										callback: value => 'R$ ' + value.toLocaleString('pt-BR')
+									}
+								}
+							}
+						}
+					}
+			);
+			
+			if (chartInstances.monthlyCostEvolutionChart) chartInstances.monthlyCostEvolutionChart.destroy();
+			chartInstances.monthlyCostEvolutionChart = new Chart(
+					document.getElementById('monthlyCostEvolutionChart'),
+					{
+						type: 'line',
+						data: {
+							labels: data.monthlyCostEvolution.labels,
+							datasets: [{
+								label: 'Custos Totais (R$)',
+								data: data.monthlyCostEvolution.data,
+								backgroundColor: chartColors.orange,
+								borderColor: chartColors.orangeBorder,
+								borderWidth: 1,
+								fill: true
 							}]
 						},
 						options: {
