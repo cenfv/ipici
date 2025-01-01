@@ -341,6 +341,34 @@ class ReportAdmin(admin.ModelAdmin):
             .exclude(device__zone__isnull=True)
         )
 
+        problems_by_type = (
+            queryset.values('device__type', 'status')
+            .annotate(count=Count('id'))
+            .order_by('device__type', 'status')
+        )
+
+        device_types = dict(LightingDevice.TYPE_CHOICES)
+        status_types = dict(ReportedProblem.PROBLEM_STATUS_CHOICES)
+
+        processed_data = {}
+        for problem in problems_by_type:
+            device_type = device_types.get(problem['device__type'], problem['device__type'])
+            if device_type not in processed_data:
+                processed_data[device_type] = {status: 0 for status in status_types.values()}
+            processed_data[device_type][status_types[problem['status']]] = problem['count']
+
+        problem_origins = (
+            queryset.values('origin')
+            .annotate(count=Count('id'))
+            .order_by('origin')
+        )
+
+        device_problems = (
+            queryset.values('device__type')
+            .annotate(count=Count('id'))
+            .order_by('-count')[:5]
+        )
+
         return {
             'problemResolution': {
                 'labels': [item['device__zone__name'] for item in total_problems],
@@ -349,6 +377,25 @@ class ReportAdmin(admin.ModelAdmin):
                     if item['total'] > 0 else 0
                     for item in total_problems
                 ]
+            },
+            'problemsOverview': {
+                'labels': list(processed_data.keys()),
+                'datasets': [
+                    {
+                        'label': status,
+                        'data': [processed_data[device_type][status] for device_type in processed_data.keys()]
+                    }
+                    for status in status_types.values()
+                ]
+            },
+            'problemOrigins': {
+                'labels': [dict(ReportedProblem.ORIGIN_CHOICES)[origin] for origin in
+                           problem_origins.values_list('origin', flat=True)],
+                'data': [item['count'] for item in problem_origins]
+            },
+            'deviceProblems': {
+                'labels': [dict(LightingDevice.TYPE_CHOICES)[item['device__type']] for item in device_problems],
+                'data': [item['count'] for item in device_problems]
             }
         }
 

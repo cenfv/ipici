@@ -58,14 +58,24 @@
 	<!-- Manutenção -->
 	<div id="maintenance" class="tab-content">
 		<div class="filters">
-			<select id="maintenanceZoneFilter" class="filter-select">
-				<option value="">Todas as Zonas</option>
-				{% for zone in zones %}
-				<option value="{{ zone.name }}">{{ zone.name }}</option>
-				{% endfor %}
-			</select>
-			<input type="date" id="maintenanceDateFrom" class="filter-date" placeholder="Data Inicial">
-			<input type="date" id="maintenanceDateTo" class="filter-date" placeholder="Data Final">
+			<div class="filter-group">
+				<label class="filter-label">Zona</label>
+				<select id="maintenanceZoneFilter" class="filter-select">
+					<option value="">Todas as Zonas</option>
+					{% for zone in zones %}
+					<option value="{{ zone.name }}">{{ zone.name }}</option>
+					{% endfor %}
+				</select>
+			</div>
+			<div class="filter-group">
+				<label class="filter-label">Data Inicial</label>
+				<input type="date" id="maintenanceDateFrom" class="filter-date">
+			</div>
+			<div class="filter-group">
+				<label class="filter-label">Data Final</label>
+				<input type="date" id="maintenanceDateTo" class="filter-date">
+			</div>
+			<button class="reset-filters" onclick="resetFilters('maintenance')">Limpar Filtros</button>
 		</div>
 		<div class="chart-container">
 			<h3 class="chart-title">Frequência de Manutenção por Dispositivo</h3>
@@ -78,25 +88,57 @@
 	<!-- Problemas -->
 	<div id="problems" class="tab-content">
 		<div class="filters">
-			<select id="problemZoneFilter" class="filter-select">
-				<option value="">Todas as Zonas</option>
-				{% for zone in zones %}
-				<option value="{{ zone.name }}">{{ zone.name }}</option>
-				{% endfor %}
-			</select>
-			<select id="problemStatusFilter" class="filter-select">
-				<option value="">Todos os Status</option>
-				{% for key, value in problem_status.items %}
-				<option value="{{ key }}">{{ value }}</option>
-				{% endfor %}
-			</select>
-			<input type="date" id="problemDateFrom" class="filter-date" placeholder="Data Inicial">
-			<input type="date" id="problemDateTo" class="filter-date" placeholder="Data Final">
+			<div class="filter-group">
+				<label class="filter-label">Zona</label>
+				<select id="problemZoneFilter" class="filter-select">
+					<option value="">Todas as Zonas</option>
+					{% for zone in zones %}
+					<option value="{{ zone.name }}">{{ zone.name }}</option>
+					{% endfor %}
+				</select>
+			</div>
+			<div class="filter-group">
+				<label class="filter-label">Status</label>
+				<select id="problemStatusFilter" class="filter-select">
+					<option value="">Todos os Status</option>
+					{% for key, value in problem_status.items %}
+					<option value="{{ key }}">{{ value }}</option>
+					{% endfor %}
+				</select>
+			</div>
+			<div class="filter-group">
+				<label class="filter-label">Data Inicial</label>
+				<input type="date" id="problemDateFrom" class="filter-date">
+			</div>
+			<div class="filter-group">
+				<label class="filter-label">Data Final</label>
+				<input type="date" id="problemDateTo" class="filter-date">
+			</div>
+			<button class="reset-filters" onclick="resetFilters('problems')">Limpar Filtros</button>
+		</div>
+		<div class="chart-container">
+			<h3 class="chart-title">Visão Geral de Problemas por Tipo de Dispositivo</h3>
+			<div class="chart-wrapper">
+				<canvas id="problemsOverviewChart"></canvas>
+			</div>
 		</div>
 		<div class="chart-container">
 			<h3 class="chart-title">Taxa de Resolução de Problemas por Zona</h3>
 			<div class="chart-wrapper">
 				<canvas id="problemResolutionChart"></canvas>
+			</div>
+		</div>
+		<div class="chart-container">
+			<h3 class="chart-title">Origem dos Problemas</h3>
+			<div class="chart-wrapper">
+				<canvas id="problemOriginsChart"></canvas>
+			</div>
+		</div>
+		
+		<div class="chart-container">
+			<h3 class="chart-title">Top 5 Tipos de Dispositivos com Problemas</h3>
+			<div class="chart-wrapper">
+				<canvas id="deviceProblemsChart"></canvas>
 			</div>
 		</div>
 	</div>
@@ -187,7 +229,29 @@
 			redBorder: 'rgba(255, 99, 132, 1)'
 		};
 		
-		// Tab switching functionality
+		const chartInstances = {
+			devicesByZoneChart: null,
+			operationalStatusChart: null,
+			maintenanceFrequencyChart: null,
+			problemResolutionChart: null,
+			completionTimeChart: null,
+			costsByZoneChart: null,
+			problemsByZoneChart: null,
+			problemsByUserChart: null,
+			problemsOverviewChart: null,
+			problemOriginsChart: null,
+			deviceProblemsChart: null
+		};
+		
+		window.resetFilters = function (tabName) {
+			const tab = document.getElementById(tabName);
+			const filters = tab.querySelectorAll('.filter-select, .filter-date');
+			filters.forEach(filter => {
+				filter.value = '';
+			});
+			loadChartData(tabName);
+		};
+		
 		const tabs = document.querySelectorAll('.tab-button');
 		const contents = document.querySelectorAll('.tab-content');
 		
@@ -205,7 +269,6 @@
 			});
 		});
 		
-		// Add event listeners for all filters
 		const filters = document.querySelectorAll('.filter-select, .filter-date');
 		filters.forEach(filter => {
 			filter.addEventListener('change', () => {
@@ -216,6 +279,22 @@
 		
 		function loadChartData(tabName) {
 			const queryParams = new URLSearchParams();
+			
+			const dateFilters = {
+				'maintenance': ['maintenanceDateFrom', 'maintenanceDateTo'],
+				'problems': ['problemDateFrom', 'problemDateTo'],
+				'service-orders': ['orderDateFrom', 'orderDateTo'],
+				'financial': ['financialDateFrom', 'financialDateTo']
+			};
+			
+			if (dateFilters[tabName]) {
+				const [dateFrom, dateTo] = dateFilters[tabName];
+				const fromValue = document.getElementById(dateFrom)?.value;
+				const toValue = document.getElementById(dateTo)?.value;
+				
+				if (fromValue) queryParams.append('date_from', fromValue);
+				if (toValue) queryParams.append('date_to', toValue);
+			}
 			
 			switch (tabName) {
 				case 'devices':
@@ -230,48 +309,31 @@
 				
 				case 'maintenance':
 					const maintenanceZone = document.getElementById('maintenanceZoneFilter').value;
-					const maintenanceDateFrom = document.getElementById('maintenanceDateFrom').value;
-					const maintenanceDateTo = document.getElementById('maintenanceDateTo').value;
-					
 					if (maintenanceZone) queryParams.append('zone', maintenanceZone);
-					if (maintenanceDateFrom) queryParams.append('date_from', maintenanceDateFrom);
-					if (maintenanceDateTo) queryParams.append('date_to', maintenanceDateTo);
 					break;
 				
 				case 'problems':
 					const problemZone = document.getElementById('problemZoneFilter').value;
 					const problemStatus = document.getElementById('problemStatusFilter').value;
-					const problemDateFrom = document.getElementById('problemDateFrom').value;
-					const problemDateTo = document.getElementById('problemDateTo').value;
 					
 					if (problemZone) queryParams.append('zone', problemZone);
 					if (problemStatus) queryParams.append('status', problemStatus);
-					if (problemDateFrom) queryParams.append('date_from', problemDateFrom);
-					if (problemDateTo) queryParams.append('date_to', problemDateTo);
 					break;
 				
 				case 'service-orders':
 					const orderZone = document.getElementById('orderZoneFilter').value;
 					const orderPriority = document.getElementById('orderPriorityFilter').value;
-					const orderDateFrom = document.getElementById('orderDateFrom').value;
-					const orderDateTo = document.getElementById('orderDateTo').value;
 					
 					if (orderZone) queryParams.append('zone', orderZone);
 					if (orderPriority) queryParams.append('priority', orderPriority);
-					if (orderDateFrom) queryParams.append('date_from', orderDateFrom);
-					if (orderDateTo) queryParams.append('date_to', orderDateTo);
 					break;
 				
 				case 'financial':
 					const financialZone = document.getElementById('financialZoneFilter').value;
 					const costType = document.getElementById('costTypeFilter').value;
-					const financialDateFrom = document.getElementById('financialDateFrom').value;
-					const financialDateTo = document.getElementById('financialDateTo').value;
 					
 					if (financialZone) queryParams.append('zone', financialZone);
 					if (costType) queryParams.append('cost_type', costType);
-					if (financialDateFrom) queryParams.append('date_from', financialDateFrom);
-					if (financialDateTo) queryParams.append('date_to', financialDateTo);
 					break;
 			}
 			
@@ -305,23 +367,77 @@
 					.catch(error => console.error('Error loading chart data:', error));
 		}
 		
-		// Chart creation functions
-		let deviceZoneChart = null;
-		let operationalStatusChart = null;
-		
 		function createDevicesCharts(data) {
-			// Destroy existing charts
-			if (deviceZoneChart) deviceZoneChart.destroy();
-			if (operationalStatusChart) operationalStatusChart.destroy();
+			if (chartInstances.devicesByZoneChart) {
+				chartInstances.devicesByZoneChart.destroy();
+			}
+			if (chartInstances.operationalStatusChart) {
+				chartInstances.operationalStatusChart.destroy();
+			}
 			
-			deviceZoneChart = new Chart(document.getElementById('devicesByZoneChart'), {
+			chartInstances.devicesByZoneChart = new Chart(
+					document.getElementById('devicesByZoneChart'),
+					{
+						type: 'bar',
+						data: {
+							labels: data.devicesByZone.labels,
+							datasets: data.devicesByZone.datasets.map((dataset, index) => ({
+								label: dataset.label,
+								data: dataset.data,
+								backgroundColor: Object.values(chartColors)[index % Object.keys(chartColors).length],
+								borderWidth: 1
+							}))
+						},
+						options: {
+							responsive: true,
+							scales: {
+								y: {
+									beginAtZero: true,
+									stacked: true
+								},
+								x: {
+									stacked: true
+								}
+							},
+							plugins: {
+								legend: {
+									position: 'top'
+								}
+							}
+						}
+					}
+			);
+			
+			chartInstances.operationalStatusChart = new Chart(
+					document.getElementById('operationalStatusChart'),
+					{
+						type: 'pie',
+						data: {
+							labels: data.operationalStatus.labels,
+							datasets: [{
+								data: data.operationalStatus.data,
+								backgroundColor: Object.values(chartColors)
+							}]
+						},
+						options: {
+							responsive: true,
+							plugins: {
+								legend: {
+									position: 'right'
+								}
+							}
+						}
+					}
+			);
+			
+			new Chart(document.getElementById('maintenanceStatusChart'), {
 				type: 'bar',
 				data: {
-					labels: data.devicesByZone.labels,
-					datasets: data.devicesByZone.datasets.map((dataset, index) => ({
-						label: dataset.label,
+					labels: data.maintenanceStatus.labels,
+					datasets: data.maintenanceStatus.datasets.map((dataset, index) => ({
+						label: dataset.label === 'MANUTENCAO' ? 'Em Manutenção' : 'Falha Detectada',
 						data: dataset.data,
-						backgroundColor: Object.values(chartColors)[index % Object.keys(chartColors).length],
+						backgroundColor: Object.values(chartColors)[index],
 						borderWidth: 1
 					}))
 				},
@@ -343,184 +459,299 @@
 					}
 				}
 			});
-			
-			operationalStatusChart = new Chart(document.getElementById('operationalStatusChart'), {
-				type: 'pie',
-				data: {
-					labels: data.operationalStatus.labels,
-					datasets: [{
-						data: data.operationalStatus.data,
-						backgroundColor: Object.values(chartColors)
-					}]
-				},
-				options: {
-					responsive: true,
-					plugins: {
-						legend: {
-							position: 'right'
-						}
-					}
-				}
-			});
 		}
 		
 		function createMaintenanceCharts(data) {
-			new Chart(document.getElementById('maintenanceFrequencyChart'), {
-				type: 'bar',
-				data: {
-					labels: data.maintenanceFrequency.labels,
-					datasets: [{
-						label: 'Número de Manutenções',
-						data: data.maintenanceFrequency.data,
-						backgroundColor: chartColors.blue,
-						borderColor: chartColors.blueBorder,
-						borderWidth: 1
-					}]
-				},
-				options: {
-					responsive: true,
-					scales: {
-						y: {
-							beginAtZero: true,
-							ticks: {stepSize: 1}
+			if (chartInstances.maintenanceFrequencyChart) {
+				chartInstances.maintenanceFrequencyChart.destroy();
+			}
+			
+			chartInstances.maintenanceFrequencyChart = new Chart(
+					document.getElementById('maintenanceFrequencyChart'),
+					{
+						type: 'bar',
+						data: {
+							labels: data.maintenanceFrequency.labels,
+							datasets: [{
+								label: 'Número de Manutenções',
+								data: data.maintenanceFrequency.data,
+								backgroundColor: chartColors.blue,
+								borderColor: chartColors.blueBorder,
+								borderWidth: 1
+							}]
+						},
+						options: {
+							responsive: true,
+							scales: {
+								y: {
+									beginAtZero: true,
+									ticks: {stepSize: 1}
+								}
+							}
 						}
 					}
-				}
-			});
+			);
 		}
 		
 		function createProblemsCharts(data) {
-			new Chart(document.getElementById('problemResolutionChart'), {
-				type: 'bar',
-				data: {
-					labels: data.problemResolution.labels,
-					datasets: [{
-						label: 'Taxa de Resolução (%)',
-						data: data.problemResolution.data,
-						backgroundColor: chartColors.green,
-						borderColor: chartColors.greenBorder,
-						borderWidth: 1
-					}]
-				},
-				options: {
-					responsive: true,
-					scales: {
-						y: {
-							beginAtZero: true,
-							max: 100,
-							ticks: {
-								callback: value => value + '%'
+			if (chartInstances.problemResolutionChart) {
+				chartInstances.problemResolutionChart.destroy();
+			}
+			if (chartInstances.problemsOverviewChart) {
+				chartInstances.problemsOverviewChart.destroy();
+			}
+			if (chartInstances.problemOriginsChart) {
+				chartInstances.problemOriginsChart.destroy();
+			}
+			if (chartInstances.deviceProblemsChart) {
+				chartInstances.deviceProblemsChart.destroy();
+			}
+			
+			chartInstances.problemsOverviewChart = new Chart(
+					document.getElementById('problemsOverviewChart'),
+					{
+						type: 'bar',
+						data: {
+							labels: data.problemsOverview.labels,
+							datasets: data.problemsOverview.datasets.map((dataset, index) => ({
+								label: dataset.label,
+								data: dataset.data,
+								backgroundColor: Object.values(chartColors)[index % Object.keys(chartColors).length],
+								borderColor: Object.values(chartColors).map(color => color.replace('0.5', '1'))[index % Object.keys(chartColors).length],
+								borderWidth: 1
+							}))
+						},
+						options: {
+							responsive: true,
+							scales: {
+								y: {
+									beginAtZero: true,
+									stacked: true
+								},
+								x: {
+									stacked: true
+								}
+							},
+							plugins: {
+								legend: {
+									position: 'top'
+								}
 							}
 						}
 					}
-				}
-			});
+			);
+			
+			chartInstances.problemResolutionChart = new Chart(
+					document.getElementById('problemResolutionChart'),
+					{
+						type: 'bar',
+						data: {
+							labels: data.problemResolution.labels,
+							datasets: [{
+								label: 'Taxa de Resolução (%)',
+								data: data.problemResolution.data,
+								backgroundColor: chartColors.green,
+								borderColor: chartColors.greenBorder,
+								borderWidth: 1
+							}]
+						},
+						options: {
+							responsive: true,
+							scales: {
+								y: {
+									beginAtZero: true,
+									max: 100,
+									ticks: {
+										callback: value => value + '%'
+									}
+								}
+							}
+						}
+					}
+			);
+			chartInstances.problemOriginsChart = new Chart(
+					document.getElementById('problemOriginsChart'),
+					{
+						type: 'pie',
+						data: {
+							labels: data.problemOrigins.labels,
+							datasets: [{
+								data: data.problemOrigins.data,
+								backgroundColor: Object.values(chartColors)
+							}]
+						},
+						options: {
+							responsive: true,
+							plugins: {
+								legend: {
+									position: 'right'
+								}
+							}
+						}
+					}
+			);
+			
+			chartInstances.deviceProblemsChart = new Chart(
+					document.getElementById('deviceProblemsChart'),
+					{
+						type: 'bar',
+						data: {
+							labels: data.deviceProblems.labels,
+							datasets: [{
+								label: 'Número de Problemas',
+								data: data.deviceProblems.data,
+								backgroundColor: chartColors.orange,
+								borderColor: chartColors.orangeBorder,
+								borderWidth: 1
+							}]
+						},
+						options: {
+							responsive: true,
+							scales: {
+								y: {
+									beginAtZero: true,
+									ticks: {
+										stepSize: 1
+									}
+								}
+							}
+						}
+					}
+			);
 		}
 		
 		function createServiceOrdersCharts(data) {
-			new Chart(document.getElementById('completionTimeChart'), {
-				type: 'bar',
-				data: {
-					labels: data.completionTime.labels,
-					datasets: [{
-						label: 'Tempo Médio (horas)',
-						data: data.completionTime.data,
-						backgroundColor: chartColors.orange,
-						borderColor: chartColors.orangeBorder,
-						borderWidth: 1
-					}]
-				},
-				options: {
-					responsive: true,
-					scales: {
-						y: {
-							beginAtZero: true,
-							ticks: {
-								callback: value => value.toFixed(1) + 'h'
+			if (chartInstances.completionTimeChart) {
+				chartInstances.completionTimeChart.destroy();
+			}
+			
+			chartInstances.completionTimeChart = new Chart(
+					document.getElementById('completionTimeChart'),
+					{
+						type: 'bar',
+						data: {
+							labels: data.completionTime.labels,
+							datasets: [{
+								label: 'Tempo Médio (horas)',
+								data: data.completionTime.data,
+								backgroundColor: chartColors.orange,
+								borderColor: chartColors.orangeBorder,
+								borderWidth: 1
+							}]
+						},
+						options: {
+							responsive: true,
+							scales: {
+								y: {
+									beginAtZero: true,
+									ticks: {
+										callback: value => value.toFixed(1) + 'h'
+									}
+								}
 							}
 						}
 					}
-				}
-			});
+			);
 		}
 		
 		function createFinancialCharts(data) {
-			new Chart(document.getElementById('costsByZoneChart'), {
-				type: 'bar',
-				data: {
-					labels: data.costsByZone.labels,
-					datasets: [{
-						label: 'Custo Total (R$)',
-						data: data.costsByZone.data,
-						backgroundColor: chartColors.blue,
-						borderColor: chartColors.blueBorder,
-						borderWidth: 1
-					}]
-				},
-				options: {
-					responsive: true,
-					scales: {
-						y: {
-							beginAtZero: true,
-							ticks: {
-								callback: value => 'R$ ' + value.toLocaleString('pt-BR')
+			if (chartInstances.costsByZoneChart) {
+				chartInstances.costsByZoneChart.destroy();
+			}
+			
+			chartInstances.costsByZoneChart = new Chart(
+					document.getElementById('costsByZoneChart'),
+					{
+						type: 'bar',
+						data: {
+							labels: data.costsByZone.labels,
+							datasets: [{
+								label: 'Custo Total (R$)',
+								data: data.costsByZone.data,
+								backgroundColor: chartColors.blue,
+								borderColor: chartColors.blueBorder,
+								borderWidth: 1
+							}]
+						},
+						options: {
+							responsive: true,
+							scales: {
+								y: {
+									beginAtZero: true,
+									ticks: {
+										callback: value => 'R$ ' + value.toLocaleString('pt-BR')
+									}
+								}
 							}
 						}
 					}
-				}
-			});
+			);
 		}
 		
 		function createGeographicalCharts(data) {
-			new Chart(document.getElementById('problemsByZoneChart'), {
-				type: 'bar',
-				data: {
-					labels: data.problemsByZone.labels,
-					datasets: [{
-						label: 'Número de Problemas',
-						data: data.problemsByZone.data,
-						backgroundColor: chartColors.red,
-						borderColor: chartColors.redBorder,
-						borderWidth: 1
-					}]
-				},
-				options: {
-					responsive: true,
-					scales: {
-						y: {
-							beginAtZero: true,
-							ticks: {stepSize: 1}
+			if (chartInstances.problemsByZoneChart) {
+				chartInstances.problemsByZoneChart.destroy();
+			}
+			
+			chartInstances.problemsByZoneChart = new Chart(
+					document.getElementById('problemsByZoneChart'),
+					{
+						type: 'bar',
+						data: {
+							labels: data.problemsByZone.labels,
+							datasets: [{
+								label: 'Número de Problemas',
+								data: data.problemsByZone.data,
+								backgroundColor: chartColors.red,
+								borderColor: chartColors.redBorder,
+								borderWidth: 1
+							}]
+						},
+						options: {
+							responsive: true,
+							scales: {
+								y: {
+									beginAtZero: true,
+									ticks: {stepSize: 1}
+								}
+							}
 						}
 					}
-				}
-			});
+			);
 		}
 		
 		function createUsersCharts(data) {
-			new Chart(document.getElementById('problemsByUserChart'), {
-				type: 'bar',
-				data: {
-					labels: data.problemsByUser.labels,
-					datasets: [{
-						label: 'Problemas Reportados',
-						data: data.problemsByUser.data,
-						backgroundColor: chartColors.green,
-						borderColor: chartColors.greenBorder,
-						borderWidth: 1
-					}]
-				},
-				options: {
-					responsive: true,
-					scales: {
-						y: {
-							beginAtZero: true,
-							ticks: {stepSize: 1}
+			if (chartInstances.problemsByUserChart) {
+				chartInstances.problemsByUserChart.destroy();
+			}
+			
+			chartInstances.problemsByUserChart = new Chart(
+					document.getElementById('problemsByUserChart'),
+					{
+						type: 'bar',
+						data: {
+							labels: data.problemsByUser.labels,
+							datasets: [{
+								label: 'Problemas Reportados',
+								data: data.problemsByUser.data,
+								backgroundColor: chartColors.green,
+								borderColor: chartColors.greenBorder,
+								borderWidth: 1
+							}]
+						},
+						options: {
+							responsive: true,
+							scales: {
+								y: {
+									beginAtZero: true,
+									ticks: {stepSize: 1}
+								}
+							}
 						}
 					}
-				}
-			});
+			);
 		}
-		// Load initial tab data
+		
 		loadChartData('devices');
 	});
 </script>
