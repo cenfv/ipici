@@ -272,20 +272,62 @@
 	
 	<!-- Geográfico -->
 	<div id="geographical" class="tab-content">
+		<!-- Problemas por Zona -->
 		<div class="chart-container">
 			<h3 class="chart-title">Incidência de Problemas por Zona</h3>
 			<div class="chart-wrapper">
 				<canvas id="problemsByZoneChart"></canvas>
 			</div>
 		</div>
+		
+		<!-- Manutenções por Zona -->
+		<div class="chart-container">
+			<h3 class="chart-title">Frequência de Manutenções por Zona</h3>
+			<div class="chart-wrapper">
+				<canvas id="maintenanceByZoneChart"></canvas>
+			</div>
+		</div>
+		
+		<!-- Ordens de Serviço por Zona -->
+		<div class="chart-container">
+			<h3 class="chart-title">Distribuição de Ordens de Serviço Abertas</h3>
+			<div class="chart-wrapper">
+				<canvas id="openOrdersByZoneChart"></canvas>
+			</div>
+		</div>
 	</div>
 	
 	<!-- Usuários -->
 	<div id="users" class="tab-content">
+		
+		<div class="chart-container">
+			<h3 class="chart-title">Distribuição de Usuários por Cargo</h3>
+			<div class="chart-wrapper">
+				<canvas id="usersByRoleChart"></canvas>
+			</div>
+		</div>
+		
+		<!-- 1. Problemas Reportados por Usuário (já existente) -->
 		<div class="chart-container">
 			<h3 class="chart-title">Problemas Reportados por Usuário</h3>
 			<div class="chart-wrapper">
 				<canvas id="problemsByUserChart"></canvas>
+			</div>
+		</div>
+		
+		<!-- 2. Problemas por Cargo do Usuário -->
+		<div class="chart-container">
+			<h3 class="chart-title">Problemas por Cargo do Usuário</h3>
+			<div class="chart-wrapper">
+				<canvas id="problemsByRoleChart"></canvas>
+			</div>
+		</div>
+		
+		<!-- 3. Usuários com Maior Frequência de Reportes Aprovados -->
+		<div class="chart-container">
+			<h3 class="chart-title">Usuários com Maior Frequência de Problemas Relatados Aprovados</h3>
+			<div class="chart-wrapper">
+				<canvas id="approvedReportsChart"></canvas>
 			</div>
 		</div>
 	</div>
@@ -332,8 +374,14 @@
 			statusByPriorityChart: null,
 			costsByTypeChart: null,
 			avgMaintenanceCostByDeviceTypeChart: null,
-			monthlyCostEvolutionChart: null
-			
+			monthlyCostEvolutionChart: null,
+			maintenanceByZoneChart: null,
+			openOrdersByZoneChart: null,
+			usersByZoneChart: null,
+			usersByRoleChart: null,
+			usersByStatusChart: null,
+			usersByCreationDateChart: null,
+			approvedReportsChart: null,
 		};
 		
 		window.resetFilters = function (tabName) {
@@ -1005,10 +1053,21 @@
 		}
 		
 		function createGeographicalCharts(data) {
+			// Configurações comuns para todos os gráficos
+			const commonOptions = {
+				responsive: true,
+				scales: {
+					y: {
+						beginAtZero: true,
+						ticks: {stepSize: 1}
+					}
+				}
+			};
+			
+			// 1. Problemas por Zona
 			if (chartInstances.problemsByZoneChart) {
 				chartInstances.problemsByZoneChart.destroy();
 			}
-			
 			chartInstances.problemsByZoneChart = new Chart(
 					document.getElementById('problemsByZoneChart'),
 					{
@@ -1023,24 +1082,60 @@
 								borderWidth: 1
 							}]
 						},
-						options: {
-							responsive: true,
-							scales: {
-								y: {
-									beginAtZero: true,
-									ticks: {stepSize: 1}
-								}
-							}
-						}
+						options: commonOptions
+					}
+			);
+			
+			// 3. Manutenções por Zona
+			if (chartInstances.maintenanceByZoneChart) {
+				chartInstances.maintenanceByZoneChart.destroy();
+			}
+			chartInstances.maintenanceByZoneChart = new Chart(
+					document.getElementById('maintenanceByZoneChart'),
+					{
+						type: 'bar',
+						data: {
+							labels: data.maintenanceByZone.labels,
+							datasets: [{
+								label: 'Número de Manutenções',
+								data: data.maintenanceByZone.data,
+								backgroundColor: chartColors.green,
+								borderColor: chartColors.greenBorder,
+								borderWidth: 1
+							}]
+						},
+						options: commonOptions
+					}
+			);
+			
+			// 4. Ordens de Serviço por Zona
+			if (chartInstances.openOrdersByZoneChart) {
+				chartInstances.openOrdersByZoneChart.destroy();
+			}
+			chartInstances.openOrdersByZoneChart = new Chart(
+					document.getElementById('openOrdersByZoneChart'),
+					{
+						type: 'bar',
+						data: {
+							labels: data.openOrdersByZone.labels,
+							datasets: [{
+								label: 'Ordens de Serviço Abertas',
+								data: data.openOrdersByZone.data,
+								backgroundColor: chartColors.orange,
+								borderColor: chartColors.orangeBorder,
+								borderWidth: 1
+							}]
+						},
+						options: commonOptions
 					}
 			);
 		}
 		
 		function createUsersCharts(data) {
+			// 1. Problemas Reportados por Usuário (já existente)
 			if (chartInstances.problemsByUserChart) {
 				chartInstances.problemsByUserChart.destroy();
 			}
-			
 			chartInstances.problemsByUserChart = new Chart(
 					document.getElementById('problemsByUserChart'),
 					{
@@ -1061,6 +1156,113 @@
 								y: {
 									beginAtZero: true,
 									ticks: {stepSize: 1}
+								}
+							}
+						}
+					}
+			);
+			
+			// 2. Problemas por Cargo do Usuário
+			if (chartInstances.problemsByRoleChart) {
+				chartInstances.problemsByRoleChart.destroy();
+			}
+			chartInstances.problemsByRoleChart = new Chart(
+					document.getElementById('problemsByRoleChart'),
+					{
+						type: 'pie',
+						data: {
+							labels: data.problemsByRole.labels,
+							datasets: [{
+								data: data.problemsByRole.data,
+								backgroundColor: [
+									chartColors.blue,
+									chartColors.green,
+									chartColors.yellow,
+									chartColors.red
+								]
+							}]
+						},
+						options: {
+							responsive: true,
+							plugins: {
+								legend: {
+									position: 'right'
+								}
+							}
+						}
+					}
+			);
+			
+			// 3. Usuários com Maior Frequência de Reportes Aprovados
+			if (chartInstances.approvedReportsChart) {
+				chartInstances.approvedReportsChart.destroy();
+			}
+			chartInstances.approvedReportsChart = new Chart(
+					document.getElementById('approvedReportsChart'),
+					{
+						type: 'bar',
+						data: {
+							labels: data.approvedReports.labels,
+							datasets: [{
+								label: 'Problemas Relatados Aprovados',
+								data: data.approvedReports.data,
+								backgroundColor: chartColors.blue,
+								borderColor: chartColors.blueBorder,
+								borderWidth: 1
+							}]
+						},
+						options: {
+							responsive: true,
+							scales: {
+								y: {
+									beginAtZero: true,
+									ticks: {stepSize: 1}
+								}
+							}
+						}
+					}
+			);
+			
+			// 5. Número de Usuários por Cargo
+			if (chartInstances.usersByRoleChart) {
+				chartInstances.usersByRoleChart.destroy();
+			}
+			chartInstances.usersByRoleChart = new Chart(
+					document.getElementById('usersByRoleChart'),
+					{
+						type: 'doughnut',
+						data: {
+							labels: data.usersByRole.labels,
+							datasets: [{
+								data: data.usersByRole.data,
+								backgroundColor: [
+									chartColors.red,    // Administradores
+									chartColors.blue,   // Funcionários
+									chartColors.green   // Usuários Comuns
+								],
+								borderWidth: 1
+							}]
+						},
+						options: {
+							responsive: true,
+							plugins: {
+								legend: {
+									position: 'right'
+								},
+								title: {
+									display: true,
+									text: 'Distribuição de Usuários por Cargo'
+								},
+								tooltip: {
+									callbacks: {
+										label: function (context) {
+											const label = context.label || '';
+											const value = context.raw || 0;
+											const total = context.dataset.data.reduce((a, b) => a + b, 0);
+											const percentage = ((value / total) * 100).toFixed(1);
+											return `${label}: ${value} (${percentage}%)`;
+										}
+									}
 								}
 							}
 						}

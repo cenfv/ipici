@@ -1,0 +1,169 @@
+.report-dashboard {
+    margin: 0;
+    width: 100%;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.report-tabs {
+    display: flex;
+    gap: 1px;
+    background-color: #f0f2f5;
+    padding: 10px;
+    border-radius: 8px 8px 0 0;
+    overflow-x: auto;
+    box-sizing: border-box;
+    margin-bottom: 0;
+}
+
+.tab-button {
+    padding: 10px 20px;
+    border: none;
+    background-color: #fff;
+    cursor: pointer;
+    font-weight: 500;
+    color: #666;
+    transition: all 0.3s;
+    white-space: nowrap;
+    flex: 1;
+    min-width: max-content;
+}
+
+.tab-button.active {
+    background-color: #1976d2;
+    color: white;
+}
+
+.tab-content {
+    display: none;
+    padding: 20px;
+    background-color: white;
+    border-radius: 0 0 8px 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    box-sizing: border-box;
+    margin: 0;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+.chart-container {
+    margin-bottom: 30px;
+    padding: 20px;
+    border-radius: 8px;
+    background-color: white;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    box-sizing: border-box;
+    position: relative;
+}
+
+.chart-title {
+    margin-bottom: 15px;
+    color: #333;
+    font-size: 1.2em;
+    font-weight: 500;
+}
+
+.chart-wrapper {
+    position: relative;
+    aspect-ratio: 16/9;
+    min-height: 300px;
+    max-height: 500px;
+}
+
+/* Ajustes responsivos */
+@media (max-width: 768px) {
+    .report-dashboard {
+        padding: 10px;
+    }
+
+    .report-tabs {
+        padding: 5px;
+    }
+
+    .tab-button {
+        padding: 8px 15px;
+        font-size: 0.9em;
+    }
+
+    .tab-content {
+        padding: 10px;
+    }
+
+    .chart-container {
+        padding: 15px;
+        margin-bottom: 20px;
+    }
+
+    .chart-wrapper {
+        min-height: 200px;
+    }
+}
+
+/* Ajustes para o tema Jazzmin */
+.content {
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+#content-main {
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+.card {
+    margin: 0 !important;
+}
+
+.card-body {
+    padding: 0 !important;
+}
+
+.filters {
+    padding: 1rem;
+    margin-bottom: 1rem;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.filter-select,
+.filter-date {
+    padding: 0.5rem;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    min-width: 200px;
+}
+
+.filter-date {
+    min-width: 150px;
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.filter-label {
+    font-size: 0.875rem;
+    color: #666;
+}
+
+.reset-filters {
+    margin: 2px;
+    margin-top: auto;
+    padding: 0.5rem 1rem;
+    background: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 0.25rem;
+    cursor: pointer;
+}
+
+.reset-filters:hover {
+    background: #c82333;
+}

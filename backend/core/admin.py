@@ -3,6 +3,8 @@ from django.contrib.auth.models import Group
 from django.utils.html import format_html
 from django.db import models
 from django.db.models import fields
+
+from accounts.models import CustomUser
 from .forms import ZoneAdminForm
 
 from leaflet.admin import LeafletGeoAdmin
@@ -606,9 +608,34 @@ class ReportAdmin(admin.ModelAdmin):
         }
 
     def get_geographical_data(self):
-        # Mapeamento de problemas por zona
+        # 1. Problemas por zona
         problems_by_zone = (
             ReportedProblem.objects.values('device__zone__name')
+            .annotate(count=Count('id'))
+            .exclude(device__zone__isnull=True)
+            .order_by('-count')
+        )
+
+        # 2. Concentração de dispositivos por zona
+        devices_by_zone = (
+            LightingDevice.objects.values('zone__name')
+            .annotate(count=Count('id'))
+            .exclude(zone__isnull=True)
+            .order_by('-count')
+        )
+
+        # 3. Frequência de manutenções por zona
+        maintenance_by_zone = (
+            Maintenance.objects.values('device__zone__name')
+            .annotate(count=Count('id'))
+            .exclude(device__zone__isnull=True)
+            .order_by('-count')
+        )
+
+        # 4. Ordens de serviço abertas por zona
+        open_orders_by_zone = (
+            ServiceOrder.objects.filter(status='ABERTA')
+            .values('device__zone__name')
             .annotate(count=Count('id'))
             .exclude(device__zone__isnull=True)
             .order_by('-count')
@@ -618,11 +645,23 @@ class ReportAdmin(admin.ModelAdmin):
             'problemsByZone': {
                 'labels': [item['device__zone__name'] for item in problems_by_zone],
                 'data': [item['count'] for item in problems_by_zone]
+            },
+            'devicesByZone': {
+                'labels': [item['zone__name'] for item in devices_by_zone],
+                'data': [item['count'] for item in devices_by_zone]
+            },
+            'maintenanceByZone': {
+                'labels': [item['device__zone__name'] for item in maintenance_by_zone],
+                'data': [item['count'] for item in maintenance_by_zone]
+            },
+            'openOrdersByZone': {
+                'labels': [item['device__zone__name'] for item in open_orders_by_zone],
+                'data': [item['count'] for item in open_orders_by_zone]
             }
         }
 
     def get_users_data(self):
-        # Análise de problemas reportados por usuário
+        # 1. Problemas reportados por usuário (já existente)
         problems_by_user = (
             ReportedProblem.objects.values('user__email')
             .annotate(count=Count('id'))
@@ -630,10 +669,63 @@ class ReportAdmin(admin.ModelAdmin):
             .order_by('-count')[:10]
         )
 
+        # 2. Problemas por cargo do usuário
+        problems_by_role = (
+            ReportedProblem.objects.values('origin')
+            .annotate(count=Count('id'))
+            .order_by('-count')
+        )
+
+        # 3. Usuários com maior frequência de reportes aprovados
+        users_with_approved_reports = (
+            ReportedProblem.objects.filter(
+                service_orders__isnull=False  # Problemas que geraram ordens de serviço
+            )
+            .values('user__email')
+            .annotate(approved_count=Count('service_orders'))
+            .exclude(user__isnull=True)
+            .order_by('-approved_count')[:10]
+        )
+
+        # 4. Distribuição de técnicos por zona
+        technicians_by_zone = (
+            Maintenance.objects.values(
+                'responsible_technician__email',
+                'device__zone__name'
+            )
+            .annotate(service_count=Count('id'))
+            .filter(responsible_technician__role=CustomUser.RoleChoices.EMPLOYEE)
+            .order_by('device__zone__name', '-service_count')
+        )
+
+        users_by_role = (
+            CustomUser.objects.values('role')
+            .annotate(count=Count('id'))
+            .order_by('role')
+        )
+
+        role_mapping = {
+            CustomUser.RoleChoices.ADMINISTRATOR: 'Administradores',
+            CustomUser.RoleChoices.EMPLOYEE: 'Funcionários',
+            CustomUser.RoleChoices.REGULAR_USER: 'Usuários'
+        }
+
         return {
             'problemsByUser': {
                 'labels': [item['user__email'] for item in problems_by_user],
                 'data': [item['count'] for item in problems_by_user]
+            },
+            'problemsByRole': {
+                'labels': [item['origin'] for item in problems_by_role],
+                'data': [item['count'] for item in problems_by_role]
+            },
+            'approvedReports': {
+                'labels': [item['user__email'] for item in users_with_approved_reports],
+                'data': [item['approved_count'] for item in users_with_approved_reports]
+            },
+            'usersByRole': {
+                'labels': [role_mapping.get(item['role'], item['role']) for item in users_by_role],
+                'data': [item['count'] for item in users_by_role]
             }
         }
 
