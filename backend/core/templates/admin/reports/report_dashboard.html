@@ -22,24 +22,34 @@
 	<!-- Dispositivos -->
 	<div id="devices" class="tab-content active">
 		<div class="filters">
-			<select id="deviceZoneFilter" class="filter-select">
-				<option value="">Todas as Zonas</option>
-				{% for zone in zones %}
-				<option value="{{ zone.name }}">{{ zone.name }}</option>
-				{% endfor %}
-			</select>
-			<select id="deviceTypeFilter" class="filter-select">
-				<option value="">Todos os Tipos</option>
-				{% for key, value in device_types.items %}
-				<option value="{{ key }}">{{ value }}</option>
-				{% endfor %}
-			</select>
-			<select id="deviceStatusFilter" class="filter-select">
-				<option value="">Todos os Status</option>
-				{% for key, value in operational_status.items %}
-				<option value="{{ key }}">{{ value }}</option>
-				{% endfor %}
-			</select>
+			<div class="filter-group">
+				<label class="filter-label">Zona</label>
+				<select id="deviceZoneFilter" class="filter-select">
+					<option value="">Todas as Zonas</option>
+					{% for zone in zones %}
+					<option value="{{ zone.name }}">{{ zone.name }}</option>
+					{% endfor %}
+				</select>
+			</div>
+			<div class="filter-group">
+				<label class="filter-label">Tipo de Dispositivo</label>
+				<select id="deviceTypeFilter" class="filter-select">
+					<option value="">Todos os Tipos</option>
+					{% for key, value in device_types.items %}
+					<option value="{{ key }}">{{ value }}</option>
+					{% endfor %}
+				</select>
+			</div>
+			<div class="filter-group">
+				<label class="filter-label">Status Operacional</label>
+				<select id="deviceStatusFilter" class="filter-select">
+					<option value="">Todos os Status</option>
+					{% for key, value in operational_status.items %}
+					<option value="{{ key }}">{{ value }}</option>
+					{% endfor %}
+				</select>
+			</div>
+			<button class="reset-filters" onclick="resetFilters('devices')">Limpar Filtros</button>
 		</div>
 		<div class="chart-container">
 			<h3 class="chart-title">Distribuição de Dispositivos por Zona</h3>
@@ -173,20 +183,33 @@
 	<!-- Ordens de Serviço -->
 	<div id="service-orders" class="tab-content">
 		<div class="filters">
-			<select id="orderZoneFilter" class="filter-select">
-				<option value="">Todas as Zonas</option>
-				{% for zone in zones %}
-				<option value="{{ zone.name }}">{{ zone.name }}</option>
-				{% endfor %}
-			</select>
-			<select id="orderPriorityFilter" class="filter-select">
-				<option value="">Todas as Prioridades</option>
-				{% for key, value in priorities.items %}
-				<option value="{{ key }}">{{ value }}</option>
-				{% endfor %}
-			</select>
-			<input type="date" id="orderDateFrom" class="filter-date" placeholder="Data Inicial">
-			<input type="date" id="orderDateTo" class="filter-date" placeholder="Data Final">
+			<div class="filter-group">
+				<label class="filter-label">Zona</label>
+				<select id="orderZoneFilter" class="filter-select">
+					<option value="">Todas as Zonas</option>
+					{% for zone in zones %}
+					<option value="{{ zone.name }}">{{ zone.name }}</option>
+					{% endfor %}
+				</select>
+			</div>
+			<div class="filter-group">
+				<label class="filter-label">Prioridade</label>
+				<select id="orderPriorityFilter" class="filter-select">
+					<option value="">Todas as Prioridades</option>
+					{% for key, value in priorities.items %}
+					<option value="{{ key }}">{{ value }}</option>
+					{% endfor %}
+				</select>
+			</div>
+			<div class="filter-group">
+				<label class="filter-label">Data Inicial</label>
+				<input type="date" id="orderDateFrom" class="filter-date" placeholder="Data Inicial">
+			</div>
+			<div class="filter-group">
+				<label class="filter-label">Data Final</label>
+				<input type="date" id="orderDateTo" class="filter-date" placeholder="Data Final">
+			</div>
+			<button class="reset-filters" onclick="resetFilters('service-orders')">Limpar Filtros</button>
 		</div>
 		<div class="chart-container">
 			<h3 class="chart-title">Tempo Médio de Conclusão por Prioridade</h3>
@@ -221,20 +244,33 @@
 	<div id="financial" class="tab-content">
 		<!-- Filtros -->
 		<div class="filters">
-			<select id="financialZoneFilter" class="filter-select">
-				<option value="">Todas as Zonas</option>
-				{% for zone in zones %}
-				<option value="{{ zone.name }}">{{ zone.name }}</option>
-				{% endfor %}
-			</select>
-			<select id="costTypeFilter" class="filter-select">
-				<option value="">Todos os Tipos de Custo</option>
-				{% for key, value in cost_types.items %}
-				<option value="{{ key }}">{{ value }}</option>
-				{% endfor %}
-			</select>
-			<input type="date" id="financialDateFrom" class="filter-date" placeholder="Data Inicial">
-			<input type="date" id="financialDateTo" class="filter-date" placeholder="Data Final">
+			<div class="filter-group">
+				<label class="filter-label">Zona</label>
+				<select id="financialZoneFilter" class="filter-select">
+					<option value="">Todas as Zonas</option>
+					{% for zone in zones %}
+					<option value="{{ zone.name }}">{{ zone.name }}</option>
+					{% endfor %}
+				</select>
+			</div>
+			<div class="filter-group">
+				<label class="filter-label">Tipo de Custo</label>
+				<select id="costTypeFilter" class="filter-select">
+					<option value="">Todos os Tipos de Custo</option>
+					{% for key, value in cost_types.items %}
+					<option value="{{ key }}">{{ value }}</option>
+					{% endfor %}
+				</select>
+			</div>
+			<div class="filter-group">
+				<label class="filter-label">Data Inicial</label>
+				<input type="date" id="financialDateFrom" class="filter-date" placeholder="Data Inicial">
+			</div>
+			<div class="filter-group">
+				<label class="filter-label">Data Final</label>
+				<input type="date" id="financialDateTo" class="filter-date" placeholder="Data Final">
+			</div>
+			<button class="reset-filters" onclick="resetFilters('financial')">Limpar Filtros</button>
 		</div>
 		
 		<!-- Custos Totais por Zona -->
