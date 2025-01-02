@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, Modal, FlatList, SafeAreaView, Switch, TouchableWithoutFeedback, Platform, UIManager, LayoutAnimation } from 'react-native';
-import MapView, { Marker } from 'react-native-maps';
+import MapView, { Marker, Polygon } from 'react-native-maps';
 import { FontAwesome, MaterialIcons } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
 import { useRouter } from 'expo-router';
@@ -8,6 +8,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
 import { TextInput } from 'react-native-paper';
 import { api } from '../../service/utils/api';
+import { LocationType } from '../types/types';
 
 
 type ServiceOrderType = {
@@ -125,6 +126,7 @@ const MapServiceOrders: React.FC = () => {
   const [isBackHandlerEnabled, setIsBackHandlerEnabled] = useState(false);
   const [isSearchVisible, setIsSearchVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showZones, setShowZones] = useState(true);
 
   const mapRef = useRef<MapView>(null);
   const router = useRouter();
@@ -189,6 +191,8 @@ const MapServiceOrders: React.FC = () => {
     setIsBackHandlerEnabled(true); 
   };
 
+  
+
   const closeModal = () => {
     setSelectedServiceOrder(null);
     setModalVisible(false);
@@ -228,6 +232,13 @@ const MapServiceOrders: React.FC = () => {
       alert('Erro ao buscar localização.');
     }
   };
+  
+  const parsePolygon = (polygonStr: string): LocationType[] => {
+      return polygonStr.replace("SRID=4326;POLYGON ((", "").replace("))", "").split(", ").map(point => {
+        const [longitude, latitude] = point.split(" ").map(coord => parseFloat(coord));
+        return { latitude, longitude };
+      });
+    };
 
   const filteredServiceOrders = serviceOrders.filter(order => {
     const priorityMatch = selectedPriority === 'ALL' || order.priority === selectedPriority;
@@ -254,6 +265,37 @@ const MapServiceOrders: React.FC = () => {
           longitudeDelta: 0.01,
         }}
       >
+        {showZones && serviceOrders.map((order) => {
+          if (order.device_details?.zone?.location && order.device_details.zone.boundary_color) {
+            const zoneCoordinates = parsePolygon(order.device_details.zone.location);
+            const zoneName = order.device_details.zone.name;
+
+            if (zoneCoordinates.length > 0) {
+              return (
+                <React.Fragment key={`zone-${order.id}`}>
+                  <Polygon
+                    coordinates={zoneCoordinates}
+                    strokeColor={order.device_details.zone.boundary_color}
+                    fillColor={`${order.device_details.zone.boundary_color}20`}
+                    strokeWidth={2}
+                  />
+                  <Marker
+                    coordinate={zoneCoordinates[0]}
+                    title={zoneName}
+                    pinColor="transparent"
+                  >
+                    <View style={styles.zoneNameContainer}>
+                      <Text style={styles.zoneNameText}>{zoneName}</Text>
+                    </View>
+                  </Marker>
+                </React.Fragment>
+              );
+            }
+          }
+          return null;
+        })}
+
+
         {filteredServiceOrders.map((order) => {
           const coordinates = parseLocation(order.location);
           const markerIconUrl = getStatusMarkerUrl(order.status);
@@ -263,7 +305,7 @@ const MapServiceOrders: React.FC = () => {
               key={order.id}
               coordinate={coordinates}
               title={order.title}
-              description={`Status: ${order.status} - Prioridade:  ${order.priority}`}
+              description={`Status: ${order.status} - Prioridade: ${order.priority}`}
               image={{ uri: markerIconUrl }}
               onPress={() => openModal(order)}
             />
@@ -367,6 +409,16 @@ const MapServiceOrders: React.FC = () => {
               <Switch 
                 value={showServiceOrders} 
                 onValueChange={setShowServiceOrders} 
+                thumbColor="#1B68AC" 
+                trackColor={{ true: '#1B68AC' }}
+              />
+            </View>
+
+            <View style={styles.switchRow}>
+              <Text style={styles.filterLabel}>Mostrar Zonas</Text>
+              <Switch 
+                value={showZones} 
+                onValueChange={setShowZones} 
                 thumbColor="#1B68AC" 
                 trackColor={{ true: '#1B68AC' }}
               />
