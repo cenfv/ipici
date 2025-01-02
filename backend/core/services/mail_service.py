@@ -3,7 +3,7 @@ from django.core.mail import send_mail
 from django.template.loader import render_to_string
 import os
 
-from core.models.mail_history import MailHistory
+from audit.models import MailHistory
 
 logger = logging.getLogger(__name__)
 

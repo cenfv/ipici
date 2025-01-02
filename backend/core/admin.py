@@ -16,8 +16,9 @@ from django.http import JsonResponse
 from django.shortcuts import render
 from django.urls import path
 
+from audit.models import MailHistory, AuditLog
 from .models import (
-    AuditLog, LightingDevice, OperationalCost, Sensor, ServiceOrder, Zone, MailHistory, Address,
+    LightingDevice, OperationalCost, Sensor, ServiceOrder, Zone, Address,
     Maintenance, ReportedProblem
 )
 

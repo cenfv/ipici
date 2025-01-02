@@ -12,7 +12,7 @@ class AddressSerializer(serializers.ModelSerializer):
 class ZoneSerializer(serializers.ModelSerializer):
     class Meta:
         model = Zone
-        fields = ['name', 'description', 'location', 'city', 'region', 'neighborhood', 'zone_code', 'boundary_color', 'device_count', 'problem_count', 'created_at', 'updated_at']
+        fields = ['name', 'description', 'location', 'city', 'region', 'neighborhood', 'zone_code', 'boundary_color', 'created_at', 'updated_at']
 
 class LightingDeviceSerializer(serializers.ModelSerializer):
     address = AddressSerializer()

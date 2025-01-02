@@ -62,6 +62,7 @@ INSTALLED_APPS = [
     'api',
     'maps',
     'analytics',
+    'audit',
 ]
 
 MIDDLEWARE = [
@@ -109,7 +110,7 @@ JAZZMIN_SETTINGS = {
     "custom_css": "/css/custom_jazzmin.css",
     "icons": {
         "accounts.CustomUser": "fas fa-user",
-        "core.AuditLog": "fas fa-history",
+        "audit.AuditLog": "fas fa-history",
         "core.Country": "fas fa-flag",
         "core.LightingDevice": "fas fa-lightbulb",
         "core.Maintenance": "fas fa-tools",
@@ -118,7 +119,7 @@ JAZZMIN_SETTINGS = {
         "core.Sensor": "fas fa-microchip",
         "core.ServiceOrder": "fas fa-file-alt",
         "core.Zone": "fas fa-map-marker-alt",
-        "core.MailHistory": "fas fa-envelope",
+        "audit.MailHistory": "fas fa-envelope",
         "analytics.Report": "fas fa-chart-line",
     },
     "hide_models": [

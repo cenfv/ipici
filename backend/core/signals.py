@@ -3,7 +3,7 @@ from django.dispatch import receiver
 from django.contrib.contenttypes.models import ContentType
 from django.db import transaction, models
 from django.contrib.admin.models import LogEntry
-from .models import AuditLog
+from audit.models import AuditLog
 
 
 IGNORED_MODELS = (AuditLog, LogEntry)

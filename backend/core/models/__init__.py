@@ -1,7 +1,5 @@
-from core.models.audit_log import *
 from core.models.country import *
 from core.models.lightning_device import *
-from core.models.mail_history import *
 from core.models.maintenance import *
 from core.models.operational_cost import *
 from core.models.reported_problem import *
