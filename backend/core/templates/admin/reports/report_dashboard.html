@@ -49,6 +49,14 @@
 					{% endfor %}
 				</select>
 			</div>
+			<div class="filter-group">
+				<label class="filter-label">Data Inicial</label>
+				<input type="date" id="deviceDateFrom" class="filter-date">
+			</div>
+			<div class="filter-group">
+				<label class="filter-label">Data Final</label>
+				<input type="date" id="deviceDateTo" class="filter-date">
+			</div>
 			<button class="reset-filters" onclick="resetFilters('devices')">Limpar Filtros</button>
 		</div>
 		<div class="chart-container">
@@ -308,6 +316,26 @@
 	
 	<!-- Geográfico -->
 	<div id="geographical" class="tab-content">
+		<div class="filters">
+			<div class="filter-group">
+				<label class="filter-label">Zona</label>
+				<select id="geographicalZoneFilter" class="filter-select">
+					<option value="">Todas as Zonas</option>
+					{% for zone in zones %}
+					<option value="{{ zone.name }}">{{ zone.name }}</option>
+					{% endfor %}
+				</select>
+			</div>
+			<div class="filter-group">
+				<label class="filter-label">Data Inicial</label>
+				<input type="date" id="geographicalDateFrom" class="filter-date">
+			</div>
+			<div class="filter-group">
+				<label class="filter-label">Data Final</label>
+				<input type="date" id="geographicalDateTo" class="filter-date">
+			</div>
+			<button class="reset-filters" onclick="resetFilters('geographical')">Limpar Filtros</button>
+		</div>
 		<!-- Problemas por Zona -->
 		<div class="chart-container">
 			<h3 class="chart-title">Incidência de Problemas por Zona</h3>
@@ -335,7 +363,26 @@
 	
 	<!-- Usuários -->
 	<div id="users" class="tab-content">
-		
+		<div class="filters">
+			<div class="filter-group">
+				<label class="filter-label hidden">Zona</label>
+				<select id="usersZoneFilter" class="hidden filter-select">
+					<option value="">Todas as Zonas</option>
+					{% for zone in zones %}
+					<option value="{{ zone.name }}">{{ zone.name }}</option>
+					{% endfor %}
+				</select>
+			</div>
+			<div class="filter-group">
+				<label class="filter-label">Data Inicial</label>
+				<input type="date" id="usersDateFrom" class="filter-date">
+			</div>
+			<div class="filter-group">
+				<label class="filter-label">Data Final</label>
+				<input type="date" id="usersDateTo" class="filter-date">
+			</div>
+			<button class="reset-filters" onclick="resetFilters('users')">Limpar Filtros</button>
+		</div>
 		<div class="chart-container">
 			<h3 class="chart-title">Distribuição de Usuários por Cargo</h3>
 			<div class="chart-wrapper">
@@ -353,7 +400,7 @@
 		
 		<!-- 2. Problemas por Cargo do Usuário -->
 		<div class="chart-container">
-			<h3 class="chart-title">Problemas por Cargo do Usuário</h3>
+			<h3 class="chart-title">Problemas relatados por Cargo do Usuário</h3>
 			<div class="chart-wrapper">
 				<canvas id="problemsByRoleChart"></canvas>
 			</div>
@@ -458,10 +505,13 @@
 			const queryParams = new URLSearchParams();
 			
 			const dateFilters = {
+				'devices': ['deviceDateFrom', 'deviceDateTo'],
 				'maintenance': ['maintenanceDateFrom', 'maintenanceDateTo'],
 				'problems': ['problemDateFrom', 'problemDateTo'],
 				'service-orders': ['orderDateFrom', 'orderDateTo'],
-				'financial': ['financialDateFrom', 'financialDateTo']
+				'financial': ['financialDateFrom', 'financialDateTo'],
+				'geographical': ['geographicalDateFrom', 'geographicalDateTo'],
+				'users': ['usersDateFrom', 'usersDateTo']
 			};
 			
 			if (dateFilters[tabName]) {
@@ -511,6 +561,16 @@
 					
 					if (financialZone) queryParams.append('zone', financialZone);
 					if (costType) queryParams.append('cost_type', costType);
+					break;
+				
+				case 'geographical':
+					const geographicalZone = document.getElementById('geographicalZoneFilter').value;
+					if (geographicalZone) queryParams.append('zone', geographicalZone);
+					break;
+				
+				case 'users':
+					const usersZone = document.getElementById('usersZoneFilter').value;
+					if (usersZone) queryParams.append('zone', usersZone);
 					break;
 			}
 			

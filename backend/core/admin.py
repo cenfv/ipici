@@ -259,6 +259,10 @@ class ReportAdmin(admin.ModelAdmin):
                 queryset = queryset.filter(type=filters['type'])
             if 'status' in filters and filters['status']:
                 queryset = queryset.filter(operational_status=filters['status'])
+            if 'date_from' in filters and filters['date_from']:
+                queryset = queryset.filter(installation_date__gte=filters['date_from'])
+            if 'date_to' in filters and filters['date_to']:
+                queryset = queryset.filter(installation_date__lte=filters['date_to'])
 
         devices_by_zone = (
             queryset.values('zone__name', 'type')
@@ -607,7 +611,11 @@ class ReportAdmin(admin.ModelAdmin):
             }
         }
 
-    def get_geographical_data(self):
+    def get_geographical_data(self, filters=None):
+        zone_filter = filters.get('zone') if filters else None
+        date_from = filters.get('date_from') if filters else None
+        date_to = filters.get('date_to') if filters else None
+
         # 1. Problemas por zona
         problems_by_zone = (
             ReportedProblem.objects.values('device__zone__name')
@@ -615,6 +623,12 @@ class ReportAdmin(admin.ModelAdmin):
             .exclude(device__zone__isnull=True)
             .order_by('-count')
         )
+        if zone_filter:
+            problems_by_zone = problems_by_zone.filter(device__zone__name=zone_filter)
+        if date_from:
+            problems_by_zone = problems_by_zone.filter(report_date__gte=date_from)
+        if date_to:
+            problems_by_zone = problems_by_zone.filter(report_date__lte=date_to)
 
         # 2. Concentração de dispositivos por zona
         devices_by_zone = (
@@ -623,6 +637,8 @@ class ReportAdmin(admin.ModelAdmin):
             .exclude(zone__isnull=True)
             .order_by('-count')
         )
+        if zone_filter:
+            devices_by_zone = devices_by_zone.filter(zone__name=zone_filter)
 
         # 3. Frequência de manutenções por zona
         maintenance_by_zone = (
@@ -631,6 +647,12 @@ class ReportAdmin(admin.ModelAdmin):
             .exclude(device__zone__isnull=True)
             .order_by('-count')
         )
+        if zone_filter:
+            maintenance_by_zone = maintenance_by_zone.filter(device__zone__name=zone_filter)
+        if date_from:
+            maintenance_by_zone = maintenance_by_zone.filter(maintenance_date__gte=date_from)
+        if date_to:
+            maintenance_by_zone = maintenance_by_zone.filter(maintenance_date__lte=date_to)
 
         # 4. Ordens de serviço abertas por zona
         open_orders_by_zone = (
@@ -640,6 +662,12 @@ class ReportAdmin(admin.ModelAdmin):
             .exclude(device__zone__isnull=True)
             .order_by('-count')
         )
+        if zone_filter:
+            open_orders_by_zone = open_orders_by_zone.filter(device__zone__name=zone_filter)
+        if date_from:
+            open_orders_by_zone = open_orders_by_zone.filter(creation_date__gte=date_from)
+        if date_to:
+            open_orders_by_zone = open_orders_by_zone.filter(creation_date__lte=date_to)
 
         return {
             'problemsByZone': {
@@ -660,34 +688,57 @@ class ReportAdmin(admin.ModelAdmin):
             }
         }
 
-    def get_users_data(self):
-        # 1. Problemas reportados por usuário (já existente)
+    def get_users_data(self, filters=None):
+        role_filter = filters.get('role') if filters else None
+        zone_filter = filters.get('zone') if filters else None
+        date_from = filters.get('date_from') if filters else None
+        date_to = filters.get('date_to') if filters else None
+
+        # 1. Problemas reportados por usuário (com filtros)
         problems_by_user = (
             ReportedProblem.objects.values('user__email')
             .annotate(count=Count('id'))
             .exclude(user__isnull=True)
-            .order_by('-count')[:10]
         )
+        if role_filter:
+            problems_by_user = problems_by_user.filter(user__role=role_filter)
+        if date_from:
+            problems_by_user = problems_by_user.filter(report_date__gte=date_from)
+        if date_to:
+            problems_by_user = problems_by_user.filter(report_date__lte=date_to)
+        problems_by_user = problems_by_user.order_by('-count')[:10]
 
-        # 2. Problemas por cargo do usuário
+        # 2. Problemas por cargo do usuário (com filtros)
         problems_by_role = (
             ReportedProblem.objects.values('origin')
             .annotate(count=Count('id'))
             .order_by('-count')
         )
+        if role_filter:
+            problems_by_role = problems_by_role.filter(user__role=role_filter)
+        if date_from:
+            problems_by_role = problems_by_role.filter(report_date__gte=date_from)
+        if date_to:
+            problems_by_role = problems_by_role.filter(report_date__lte=date_to)
 
-        # 3. Usuários com maior frequência de reportes aprovados
+        # 3. Usuários com maior frequência de reportes aprovados (com filtros)
         users_with_approved_reports = (
             ReportedProblem.objects.filter(
-                service_orders__isnull=False  # Problemas que geraram ordens de serviço
+                service_orders__isnull=False
             )
             .values('user__email')
             .annotate(approved_count=Count('service_orders'))
             .exclude(user__isnull=True)
-            .order_by('-approved_count')[:10]
         )
+        if role_filter:
+            users_with_approved_reports = users_with_approved_reports.filter(user__role=role_filter)
+        if date_from:
+            users_with_approved_reports = users_with_approved_reports.filter(report_date__gte=date_from)
+        if date_to:
+            users_with_approved_reports = users_with_approved_reports.filter(report_date__lte=date_to)
+        users_with_approved_reports = users_with_approved_reports.order_by('-approved_count')[:10]
 
-        # 4. Distribuição de técnicos por zona
+        # 4. Distribuição de técnicos por zona (com filtros)
         technicians_by_zone = (
             Maintenance.objects.values(
                 'responsible_technician__email',
@@ -695,14 +746,23 @@ class ReportAdmin(admin.ModelAdmin):
             )
             .annotate(service_count=Count('id'))
             .filter(responsible_technician__role=CustomUser.RoleChoices.EMPLOYEE)
-            .order_by('device__zone__name', '-service_count')
         )
+        if zone_filter:
+            technicians_by_zone = technicians_by_zone.filter(device__zone__name=zone_filter)
+        if date_from:
+            technicians_by_zone = technicians_by_zone.filter(maintenance_date__gte=date_from)
+        if date_to:
+            technicians_by_zone = technicians_by_zone.filter(maintenance_date__lte=date_to)
+        technicians_by_zone = technicians_by_zone.order_by('device__zone__name', '-service_count')
 
+        # 5. Usuários por cargo
         users_by_role = (
             CustomUser.objects.values('role')
             .annotate(count=Count('id'))
             .order_by('role')
         )
+        if role_filter:
+            users_by_role = users_by_role.filter(role=role_filter)
 
         role_mapping = {
             CustomUser.RoleChoices.ADMINISTRATOR: 'Administradores',
@@ -722,6 +782,13 @@ class ReportAdmin(admin.ModelAdmin):
             'approvedReports': {
                 'labels': [item['user__email'] for item in users_with_approved_reports],
                 'data': [item['approved_count'] for item in users_with_approved_reports]
+            },
+            'techniciansByZone': {
+                'labels': [
+                    f"{item['responsible_technician__email']} ({item['device__zone__name']})"
+                    for item in technicians_by_zone
+                ],
+                'data': [item['service_count'] for item in technicians_by_zone]
             },
             'usersByRole': {
                 'labels': [role_mapping.get(item['role'], item['role']) for item in users_by_role],
@@ -747,8 +814,8 @@ class ReportAdmin(admin.ModelAdmin):
             'problems': lambda: self.get_problems_data(filters),
             'service-orders': lambda: self.get_service_orders_data(filters),
             'financial': lambda: self.get_financial_data(filters),
-            'geographical': lambda: self.get_geographical_data(),
-            'users': lambda: self.get_users_data(),
+            'geographical': lambda: self.get_geographical_data(filters),
+            'users': lambda: self.get_users_data(filters),
         }
 
         if report_type in data_functions:
