@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, Modal, FlatList, SafeAreaView, Switch, TouchableWithoutFeedback, Platform, UIManager, LayoutAnimation } from 'react-native';
 import MapView, { Marker, Polygon } from 'react-native-maps';
-import axios from 'axios';
 import { FontAwesome, MaterialIcons } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
 import { LightingDevice, LocationType } from '../types/types';
@@ -10,6 +9,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BackHandler } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { TextInput } from 'react-native-paper';
+import { api } from '../../service/utils/api';
 
 
 const mapTypes = [
@@ -110,10 +110,12 @@ const MapDevices: React.FC = () => {
   const fetchDevices = useCallback(async () => {
     const token = await AsyncStorage.getItem('access_token');
     setIsLoading(true);
+  
     try {
-      const response = await axios.get<LightingDevice[]>('http://192.168.1.12:8001/api/devices/', {
+      const response = await api.get<LightingDevice[]>('/devices/', {
         headers: { Authorization: `Bearer ${token}` },
       });
+  
       if (Array.isArray(response.data)) {
         setDevices(response.data);
       } else {
@@ -321,6 +323,9 @@ const MapDevices: React.FC = () => {
         </TouchableOpacity>
         <TouchableOpacity style={styles.filterButton} onPress={() => setFilterModalVisible(true)}>
           <MaterialIcons name="filter-list" size={28} color="#333" />
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.filterButton} onPress={fetchDevices}>
+          <MaterialIcons name="refresh" size={28} color="#333" />
         </TouchableOpacity>
       </SafeAreaView>
 

@@ -1,13 +1,14 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, Modal, FlatList, SafeAreaView, Switch, TouchableWithoutFeedback, Platform, UIManager, LayoutAnimation } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
-import axios from 'axios';
 import { FontAwesome, MaterialIcons } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
 import { TextInput } from 'react-native-paper';
+import { api } from '../../service/utils/api';
+
 
 type ServiceOrderType = {
   id: number;
@@ -131,10 +132,12 @@ const MapServiceOrders: React.FC = () => {
   const fetchServiceOrders = useCallback(async () => {
     const token = await AsyncStorage.getItem('access_token');
     setIsLoading(true);
+  
     try {
-      const response = await axios.get<ServiceOrderType[]>('http://192.168.1.12:8001/api/service-orders/', {
+      const response = await api.get<ServiceOrderType[]>('/service-orders/', {
         headers: { Authorization: `Bearer ${token}` },
       });
+  
       if (Array.isArray(response.data)) {
         setServiceOrders(response.data);
       } else {
@@ -156,12 +159,13 @@ const MapServiceOrders: React.FC = () => {
 
   const closeServiceOrder = async (serviceOrderId: number) => {
     const token = await AsyncStorage.getItem('access_token');
+  
     try {
-      await axios.patch(`http://192.168.1.13:8000/api/service-orders/${serviceOrderId}/close/`, {}, {
+      await api.patch(`/service-orders/${serviceOrderId}/close/`, {}, {
         headers: { Authorization: `Bearer ${token}` },
       });
       fetchServiceOrders(); 
-      closeModal();
+      closeModal(); 
     } catch (error) {
       console.error("Erro ao fechar ordem de serviço:", error);
       alert("Não foi possível fechar a ordem de serviço.");
@@ -295,6 +299,9 @@ const MapServiceOrders: React.FC = () => {
         <TouchableOpacity style={styles.filterButton} onPress={() => setFilterModalVisible(true)}>
           <MaterialIcons name="filter-list" size={28} color="#333" />
         </TouchableOpacity>
+        <TouchableOpacity style={styles.filterButton} onPress={fetchServiceOrders}>
+                  <MaterialIcons name="refresh" size={28} color="#333" />
+                </TouchableOpacity>
       </SafeAreaView>
 
       <Modal
