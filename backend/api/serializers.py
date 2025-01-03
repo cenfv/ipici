@@ -2,6 +2,8 @@ from rest_framework import serializers
 
 from accounts.models import CustomUser
 from core.models import LightingDevice, Zone, Address, ReportedProblem, ServiceOrder, Maintenance, OperationalCost
+from rest_framework.exceptions import PermissionDenied
+from django.db import transaction
 
 
 class AddressSerializer(serializers.ModelSerializer):
@@ -172,8 +174,23 @@ class MaintenanceSerializer(serializers.ModelSerializer):
     class Meta:
         model = Maintenance
         fields = '__all__'
-        read_only_fields = ['id', 'operational_cost']
+        read_only_fields = ['id', 'operational_cost', 'responsible_technician']
 
+    def validate(self, data):
+        request = self.context.get('request')
+        service_order = data.get('service_order')
+
+        if not service_order:
+            return data
+
+        if service_order.responsible != request.user:
+            raise PermissionDenied(
+                'Você só pode cadastrar manutenções para ordens de serviço nas quais é responsável.'
+            )
+
+        return data
+
+    @transaction.atomic
     def create(self, validated_data):
         cost_type = validated_data.pop('cost_type')
         value = validated_data.pop('value')
@@ -187,13 +204,16 @@ class MaintenanceSerializer(serializers.ModelSerializer):
         )
 
         validated_data['operational_cost'] = operational_cost
-
         maintenance = Maintenance.objects.create(**validated_data)
 
         service_order = validated_data.get('service_order')
         if service_order:
             service_order.status = 'CONCLUIDA'
             service_order.save()
+
+            reported_problems = service_order.reported_problems.all()
+            if reported_problems.exists():
+                reported_problems.update(status='RESOLVIDO')
 
         return maintenance
 

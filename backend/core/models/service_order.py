@@ -3,6 +3,7 @@ from django.contrib.gis.db.models import PointField
 from accounts.models import CustomUser
 from core.models import LightingDevice
 from core.models.reported_problem import ReportedProblem
+from django.core.exceptions import ValidationError
 
 
 class ServiceOrder(models.Model):
@@ -21,7 +22,7 @@ class ServiceOrder(models.Model):
     description = models.TextField(verbose_name='Descrição')
     creation_date = models.DateTimeField(auto_now_add=True, verbose_name='Data de Criação')
     priority = models.CharField(max_length=5, choices=PRIORITY_CHOICES, verbose_name='Prioridade')
-    location = PointField(verbose_name='Localização', )
+    location = PointField(verbose_name='Localização', blank=True, null=True)
     status = models.CharField(max_length=15, choices=STATUS_CHOICES, verbose_name='Status')
     responsible = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, related_name='service_orders_responsible', verbose_name='Responsável')
     author = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, related_name='service_orders_author', verbose_name='Autor')
@@ -37,3 +38,14 @@ class ServiceOrder(models.Model):
 
     def __str__(self):
         return f"{self.device} - {self.title}"
+
+    def clean(self):
+        super().clean()
+        if self.device and self.location != self.device.location:
+            self.location = self.device.location
+        elif not self.device and not self.location:
+            raise ValidationError('É necessário informar uma localização quando não há dispositivo selecionado.')
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        super().save(*args, **kwargs)

@@ -29,4 +29,6 @@ class ReportedProblem(models.Model):
         verbose_name_plural = 'Problemas Relatados'
 
     def __str__(self):
-        return f"{self.device} - {self.report_date}"
+        formatted_date = self.report_date.strftime('%m/%d/%Y %H:%M')
+        short_description = self.description[:15] + '...' if len(self.description) > 15 else self.description
+        return f"{self.user.email} - {self.device} - {formatted_date} - {short_description}"

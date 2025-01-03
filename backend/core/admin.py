@@ -1,5 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.models import Group
+from django.core.exceptions import ValidationError
 from django.utils.html import format_html
 from django.db import models
 from django.db.models import fields
@@ -15,6 +16,7 @@ from django.db.models.functions import TruncMonth
 from django.http import JsonResponse
 from django.shortcuts import render
 from django.urls import path
+
 
 from audit.models import MailHistory, AuditLog
 from .models import (
@@ -132,19 +134,26 @@ class LightingDeviceAdmin(LeafletGeoAdmin):
 @admin.register(ServiceOrder)
 class ServiceOrderAdmin(LeafletGeoAdmin):
     list_display = ('title', 'priority', 'status', 'responsible', 'author', 'creation_date', 'problem_type', 'device')
-    search_fields = ('title', 'description', 'responsible__email', 'author__email', 'device__number', 'problem_type')
+    search_fields = ('title', 'description', 'responsible__email', 'author__email', 'device__code', 'problem_type')
     list_filter = ('priority', 'status', 'creation_date')
     fieldsets = (
+        ('Device Information', {
+            'fields': ( 'device', 'problem_type', 'reported_problems')
+        }),
         (None, {
             'fields': ('title', 'description', 'priority', 'location')
         }),
         ('Status and Assignment', {
             'fields': ('status', 'responsible', 'author')
         }),
-        ('Device Information', {
-            'fields': ('device_image', 'device', 'problem_type', 'reported_problems')
-        }),
+
     )
+
+    def save_model(self, request, obj, form, change):
+        try:
+            obj.save()
+        except ValidationError as e:
+            form.add_error(None, e)
 
 
 @admin.register(Zone)

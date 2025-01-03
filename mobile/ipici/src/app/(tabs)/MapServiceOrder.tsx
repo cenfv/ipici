@@ -41,6 +41,7 @@ type ServiceOrderType = {
   device: number;
   device_details?: {
     id: number;
+    code: string;
     number: string;
     address?: {
       street?: string;
@@ -234,9 +235,9 @@ const MapServiceOrders: React.FC = () => {
       setMaintenanceModalVisible(false);
       alert("Manutenção cadastrada com sucesso!");
       fetchServiceOrders();
-    } catch (error) {
+    } catch (error :any) {
       console.error("Erro ao cadastrar manutenção:", error);
-      alert("Erro ao cadastrar manutenção. Tente novamente.");
+      alert(error.response?.data?.detail || "Erro ao cadastrar manutenção.");
     }
   };
 
@@ -646,7 +647,7 @@ const MapServiceOrders: React.FC = () => {
                   <FontAwesome name="map-marker" size={20} color="#1B68AC" />
                   <Text style={styles.infoText}>
                     Dispositivo:{" "}
-                    {selectedServiceOrder.device_details?.number ||
+                    {selectedServiceOrder.device_details?.code ||
                       "Não disponível"}
                   </Text>
                 </View>

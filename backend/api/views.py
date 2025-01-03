@@ -151,9 +151,11 @@ class PasswordResetTokenValidationView(APIView):
 
 
 class ServiceOrderListCreateView(ListCreateAPIView):
-    queryset = ServiceOrder.objects.all()
     serializer_class = ServiceOrderSerializer
     permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return ServiceOrder.objects.filter(responsible=self.request.user)
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
@@ -198,6 +200,7 @@ class ServiceOrderByDeviceView(ListCreateAPIView):
         device_id = self.kwargs.get('device_id')
         serializer.save(author=self.request.user, device_id=device_id)
 
+
 class MaintenanceListCreateView(ListCreateAPIView):
     queryset = Maintenance.objects.all()
     serializer_class = MaintenanceSerializer
@@ -205,6 +208,7 @@ class MaintenanceListCreateView(ListCreateAPIView):
 
     def perform_create(self, serializer):
         serializer.save(responsible_technician=self.request.user)
+
 
 class MaintenanceDetailView(RetrieveUpdateDestroyAPIView):
     queryset = Maintenance.objects.all()
