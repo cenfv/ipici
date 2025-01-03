@@ -115,12 +115,12 @@
 			</div>
 		</div>
 		
-		<div class="chart-container">
-			<h3 class="chart-title">Tempo Médio Entre Manutenções</h3>
-			<div class="chart-wrapper">
-				<canvas id="avgTimeBetweenMaintenancesChart"></canvas>
-			</div>
-		</div>
+<!--		<div class="chart-container">-->
+<!--			<h3 class="chart-title">Tempo Médio Entre Manutenções</h3>-->
+<!--			<div class="chart-wrapper">-->
+<!--				<canvas id="avgTimeBetweenMaintenancesChart"></canvas>-->
+<!--			</div>-->
+<!--		</div>-->
 		
 		<div class="chart-container">
 			<h3 class="chart-title">Distribuição de Manutenções por Técnico</h3>
@@ -446,7 +446,7 @@
 			problemsOverviewChart: null,
 			problemOriginsChart: null,
 			deviceProblemsChart: null,
-			avgTimeBetweenMaintenancesChart: null,
+			// avgTimeBetweenMaintenancesChart: null,
 			maintenanceByTechnicianChart: null,
 			devicesByTypeChart: null,
 			devicesAgeByTypeChart: null,
@@ -730,9 +730,9 @@
 			if (chartInstances.maintenanceFrequencyChart) {
 				chartInstances.maintenanceFrequencyChart.destroy();
 			}
-			if (chartInstances.avgTimeBetweenMaintenancesChart) {
-				chartInstances.avgTimeBetweenMaintenancesChart.destroy();
-			}
+			// if (chartInstances.avgTimeBetweenMaintenancesChart) {
+			// 	chartInstances.avgTimeBetweenMaintenancesChart.destroy();
+			// }
 			if (chartInstances.maintenanceByTechnicianChart) {
 				chartInstances.maintenanceByTechnicianChart.destroy();
 			}
@@ -762,28 +762,28 @@
 			);
 			
 			// Gráfico de Tempo Médio Entre Manutenções
-			chartInstances.avgTimeBetweenMaintenancesChart = new Chart(
-					document.getElementById('avgTimeBetweenMaintenancesChart'),
-					{
-						type: 'bar',
-						data: {
-							labels: data.avgTimeBetweenMaintenances.labels,
-							datasets: [{
-								label: 'Tempo Médio Entre Manutenções(dias)',
-								data: data.avgTimeBetweenMaintenances.data,
-								backgroundColor: chartColors.green,
-								borderColor: chartColors.greenBorder,
-								borderWidth: 1
-							}]
-						},
-						options: {
-							responsive: true,
-							scales: {
-								y: {beginAtZero: true}
-							}
-						}
-					}
-			);
+			// chartInstances.avgTimeBetweenMaintenancesChart = new Chart(
+			// 		document.getElementById('avgTimeBetweenMaintenancesChart'),
+			// 		{
+			// 			type: 'bar',
+			// 			data: {
+			// 				labels: data.avgTimeBetweenMaintenances.labels,
+			// 				datasets: [{
+			// 					label: 'Tempo Médio Entre Manutenções(dias)',
+			// 					data: data.avgTimeBetweenMaintenances.data,
+			// 					backgroundColor: chartColors.green,
+			// 					borderColor: chartColors.greenBorder,
+			// 					borderWidth: 1
+			// 				}]
+			// 			},
+			// 			options: {
+			// 				responsive: true,
+			// 				scales: {
+			// 					y: {beginAtZero: true}
+			// 				}
+			// 			}
+			// 		}
+			// );
 			
 			// Gráfico de Distribuição de Manutenções por Técnico
 			chartInstances.maintenanceByTechnicianChart = new Chart(

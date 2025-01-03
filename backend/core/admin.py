@@ -138,7 +138,7 @@ class ServiceOrderAdmin(LeafletGeoAdmin):
     list_filter = ('priority', 'status', 'creation_date')
     fieldsets = (
         ('Device Information', {
-            'fields': ( 'device', 'problem_type', 'reported_problems')
+            'fields': ('device', 'problem_type', 'reported_problems')
         }),
         (None, {
             'fields': ('title', 'description', 'priority', 'location')
@@ -360,21 +360,6 @@ class ReportAdmin(admin.ModelAdmin):
             .order_by('-count')[:10]
         )
 
-        # Tempo Médio Entre Manutenções
-        avg_time_between_maintenances = (
-            queryset.values('device__code')
-            .annotate(
-                avg_days=Avg(
-                    ExpressionWrapper(
-                        F('maintenance_date') - F('device__last_maintenance_date'),
-                        output_field=DurationField()
-                    )
-                )
-            )
-            .filter(avg_days__isnull=False)
-            .order_by('device__code')
-        )
-
         # Distribuição de Manutenções por Técnico
         maintenance_by_technician = (
             queryset.values('responsible_technician__first_name')
@@ -387,10 +372,7 @@ class ReportAdmin(admin.ModelAdmin):
                 'labels': [item['device__code'] for item in maintenance_frequency],
                 'data': [item['count'] for item in maintenance_frequency],
             },
-            'avgTimeBetweenMaintenances': {
-                'labels': [item['device__code'] for item in avg_time_between_maintenances],
-                'data': [item['avg_days'].days if item['avg_days'] else 0 for item in avg_time_between_maintenances],
-            },
+            
             'maintenanceByTechnician': {
                 'labels': [item['responsible_technician__first_name'] or 'Desconhecido' for item in
                            maintenance_by_technician],
