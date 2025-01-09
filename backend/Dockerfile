@@ -4,7 +4,7 @@ FROM python:3.10-alpine3.18
 # Define o diretório de trabalho como /app
 WORKDIR /app
 
-# Instala GDAL 3.9.3 e outras dependências essenciais para Django e PostGIS
+# Instala GDAL 3.6.4 e outras dependências essenciais para Django e PostGIS
 RUN apk add --no-cache gdal=3.6.4-r4 gdal-dev=3.6.4-r4 geos geos-dev proj proj-dev libc6-compat postgresql-dev build-base
 
 # Configurações de ambiente para evitar pyc e buffering

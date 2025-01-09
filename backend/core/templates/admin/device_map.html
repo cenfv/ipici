@@ -209,14 +209,21 @@
         color: #3274A3;
     }
     .zone-label {
-	    font-size: 13px;
+	    display: inline-block;
+	    font-size: 10px;
 	    font-weight: bold;
 	    color: #00457A;
 	    background-color: rgba(255, 255, 255, 0.8);
-	    padding: 2px 6px;
+	    padding: 2px 9px;
 	    border-radius: 4px;
 	    text-align: center;
+	    white-space: nowrap;
+	    box-sizing: border-box;
+	    overflow: hidden;
+	    text-overflow: ellipsis;
+	    max-width: 200px;
 	}
+
 </style>
 
 <script>

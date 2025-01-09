@@ -45,7 +45,7 @@ class LightingDevice(models.Model):
     location = PointField(verbose_name='Localização')
     device_image = models.ImageField(upload_to='devices/', blank=True, null=True, verbose_name='Imagem do dispositivo')
     operational_status = models.CharField(max_length=50, choices=STATUS_CHOICES, verbose_name='Status Operacional')
-    qr_code = models.CharField(max_length=100, unique=True, verbose_name='Código QR', blank=True, null=True)
+    qr_code = models.TextField(blank=True, null=True, verbose_name='Código QR')
     energy_source = models.CharField(max_length=100, verbose_name='Fonte de Energia', blank=True, null=True)
     additional_features = models.TextField(blank=True, null=True, verbose_name='Recursos Adicionais')
     nearby_installations = models.TextField(blank=True, null=True, verbose_name='Instalações Próximas')

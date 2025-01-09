@@ -30,5 +30,5 @@ class ReportedProblem(models.Model):
 
     def __str__(self):
         formatted_date = self.report_date.strftime('%m/%d/%Y %H:%M')
-        short_description = self.description[:15] + '...' if len(self.description) > 15 else self.description
-        return f"{self.user.email} - {self.device} - {formatted_date} - {short_description}"
+        short_description = self.description[:55] + '...' if len(self.description) > 55 else self.description
+        return f"{self.device} - {short_description}"

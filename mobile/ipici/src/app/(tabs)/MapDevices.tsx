@@ -422,7 +422,7 @@ const MapDevices: React.FC = () => {
               <Text style={styles.modalTitle}>Detalhes do Dispositivo</Text>
               <View style={styles.infoRow}>
                 <FontAwesome name="lightbulb-o" size={20} color="#1B68AC" />
-                <Text style={styles.infoText}>Identificação: {selectedDevice.number}</Text>
+                <Text style={styles.infoText}>Identificação: {selectedDevice.code}</Text>
               </View>
               <View style={styles.infoRow}>
                 <FontAwesome name="info-circle" size={20} color="#1B68AC" />

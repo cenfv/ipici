@@ -24,7 +24,7 @@ export type LightingDevice = {
   id: number;
   address: Address;
   zone: Zone;
-  number: string;
+  code: string;
   structural_name: string;
   location: string;
   device_image: string | null;
