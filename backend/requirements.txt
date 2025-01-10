@@ -29,4 +29,4 @@ psycopg2==2.9.10
 GDAL==3.6.4
 django-leaflet==0.31.0
 django-chartjs==2.3.0
-
+qrcode==8.0

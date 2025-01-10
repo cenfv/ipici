@@ -4,7 +4,7 @@ import MapView, { Marker, Polygon } from 'react-native-maps';
 import { FontAwesome, MaterialIcons } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
 import { LightingDevice, LocationType } from '../types/types';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BackHandler } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
@@ -94,6 +94,11 @@ const MapDevices: React.FC = () => {
   const [isBackHandlerEnabled, setIsBackHandlerEnabled] = useState(false);
   const [isSearchVisible, setIsSearchVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const { deviceId, showDetails } = useLocalSearchParams();
+  const [pendingDeviceToShow, setPendingDeviceToShow] = useState<number | null>(null);
+  const [fromQRCode, setFromQRCode] = useState(false);
+
+
 
   const mapRef = useRef<MapView>(null);
   const router = useRouter();
@@ -118,6 +123,23 @@ const MapDevices: React.FC = () => {
   
       if (Array.isArray(response.data)) {
         setDevices(response.data);
+        
+        if (pendingDeviceToShow) {
+          const deviceToShow = response.data.find(d => d.id === pendingDeviceToShow);
+          if (deviceToShow) {
+            setSelectedDevice(deviceToShow);
+            setModalVisible(true);
+            setIsBackHandlerEnabled(true);
+            
+            const coordinates = parseLocation(deviceToShow.location);
+            mapRef.current?.animateToRegion({
+              ...coordinates,
+              latitudeDelta: 0.005,
+              longitudeDelta: 0.005,
+            });
+          }
+          setPendingDeviceToShow(null);
+        }
       } else {
         console.warn("Resposta inesperada da API:", response.data);
         setDevices([]);
@@ -128,14 +150,52 @@ const MapDevices: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [pendingDeviceToShow]);
 
   useFocusEffect(
     useCallback(() => {
-      setSelectedDevice(null); 
-      setModalVisible(false); 
-    }, [])
+      if (deviceId && showDetails) {
+        setFromQRCode(true);
+      } else {
+        if (!fromQRCode) {
+          setSelectedDevice(null);
+          setModalVisible(false);
+        }
+      }
+      return () => {
+        setFromQRCode(false);
+      };
+    }, [deviceId, showDetails])
   );
+
+  useEffect(() => {
+    if (deviceId && showDetails) {
+      const numDeviceId = Number(deviceId);
+      
+      const device = devices.find(d => d.id === numDeviceId);
+      if (device) {
+        setSelectedDevice(device);
+        setModalVisible(true);
+        setIsBackHandlerEnabled(true);
+        
+        const coordinates = parseLocation(device.location);
+        mapRef.current?.animateToRegion({
+          ...coordinates,
+          latitudeDelta: 0.005,
+          longitudeDelta: 0.005,
+        });
+      } else {
+        setPendingDeviceToShow(numDeviceId);
+        fetchDevices();
+      }
+    }
+  }, [deviceId, showDetails, devices]);
+
+  useEffect(() => {
+    if (!modalVisible) {
+      setPendingDeviceToShow(null);
+    }
+  }, [modalVisible]);
 
   useEffect(() => {
     const handleBackPress = () => {
@@ -218,6 +278,8 @@ const MapDevices: React.FC = () => {
     setSelectedDevice(null);
     setModalVisible(false);
     setIsBackHandlerEnabled(false);
+    setFromQRCode(false);
+    router.replace('/MapDevices');
   };
 
   const changeMapType = (type: 'standard' | 'satellite' | 'hybrid' | 'terrain') => {
@@ -267,7 +329,7 @@ const MapDevices: React.FC = () => {
             <React.Fragment key={device.id}>
               <Marker
                 coordinate={coordinates}
-                title={device.number}
+                title={device.code}
                 description={`Tipo: ${device.type} - Status: ${device.operational_status}`}
                 image={{ uri: markerIconUrl }}
                 onPress={() => openModal(device)}

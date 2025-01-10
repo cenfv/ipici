@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Button } from 'react-native';
+import { View, Text, StyleSheet, Button, Alert } from 'react-native';
 import { CameraView, Camera } from 'expo-camera';
+import { useRouter } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { api } from '../../service/utils/api';
+
 
 export default function QrScreen() {
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [scanned, setScanned] = useState(false);
-  const [qrData, setQrData] = useState<string | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
     const getCameraPermissions = async () => {
@@ -16,10 +20,34 @@ export default function QrScreen() {
     getCameraPermissions();
   }, []);
 
-  const handleBarcodeScanned = ({ type, data }: { type: string; data: string }) => {
+  const handleBarcodeScanned = async ({ data }: { type: string; data: string }) => {
+    if (scanned) return;
     setScanned(true);
-    setQrData(data);
-    alert(`Código de tipo ${type} com dados: ${data} escaneado!`);
+    
+    try {
+      const token = await AsyncStorage.getItem('access_token');
+      
+      const response = await api.get(`/devices/by-qr/?code=${encodeURIComponent(data)}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (response.data) {
+        router.push({
+          pathname: '/MapDevices',
+          params: { 
+            deviceId: response.data.id,
+            showDetails: 'true' 
+          }
+        });
+      } else {
+        Alert.alert('Erro', 'Dispositivo não encontrado');
+        setScanned(false);
+      }
+    } catch (error) {
+      console.error('Erro ao buscar dispositivo:', error);
+      Alert.alert('Erro', 'Erro ao buscar informações do dispositivo');
+      setScanned(false);
+    }
   };
 
   if (hasPermission === null) {
@@ -34,7 +62,7 @@ export default function QrScreen() {
     <View style={styles.container}>
       {scanned ? (
         <>
-          <Text style={styles.qrData}>QR Code: {qrData}</Text>
+          <Text style={styles.qrData}>Dispositivo encontrado! Redirecionando...</Text>
           <Button title="Escanear novamente" onPress={() => setScanned(false)} />
         </>
       ) : (

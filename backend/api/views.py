@@ -66,6 +66,28 @@ class LightingDeviceDetailView(APIView):
         serializer = LightingDeviceSerializer(device)
         return Response(serializer.data)
 
+
+class LightingDeviceQRCodeView(APIView):
+    def get(self, request):
+        code = request.query_params.get('code')
+
+        if not code:
+            return Response(
+                {"error": "Device code is required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            device = LightingDevice.objects.get(code=code)
+        except LightingDevice.DoesNotExist:
+            return Response(
+                {"error": "Device not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        serializer = LightingDeviceSerializer(device)
+        return Response(serializer.data)
+
 class ReportedProblemListCreateView(ListCreateAPIView):
     queryset = ReportedProblem.objects.all()
     serializer_class = ReportedProblemSerializer

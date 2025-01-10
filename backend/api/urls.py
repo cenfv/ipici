@@ -7,7 +7,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView,TokenVerifyView
 from api.views import UserListCreateView, PasswordResetRequestView, PasswordResetTokenValidationView, \
     PasswordResetConfirmView, LightingDeviceListView, LightingDeviceDetailView, UserDetailView, UserMeView, \
     ReportedProblemListCreateView, ReportedProblemDetailView, ServiceOrderListCreateView, ServiceOrderDetailView, \
-    ServiceOrderByDeviceView, MaintenanceListCreateView, MaintenanceDetailView
+    ServiceOrderByDeviceView, MaintenanceListCreateView, MaintenanceDetailView, LightingDeviceQRCodeView
 
 router = DefaultRouter()
 
@@ -27,6 +27,7 @@ urlpatterns = [
 
     path('devices/', LightingDeviceListView.as_view(), name='lightingdevice-list'),
     path('devices/<int:pk>/', LightingDeviceDetailView.as_view(), name='lightingdevice-detail'),
+    path('devices/by-qr/', LightingDeviceQRCodeView.as_view(), name='lightingdevice-qr'),
 
     path('service-orders/', ServiceOrderListCreateView.as_view(), name='service-order-list'),
     path('service-orders/<int:pk>/', ServiceOrderDetailView.as_view(), name='service-order-detail'),

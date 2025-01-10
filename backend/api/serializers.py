@@ -16,13 +16,22 @@ class ZoneSerializer(serializers.ModelSerializer):
         model = Zone
         fields = ['name', 'description', 'location', 'city', 'region', 'neighborhood', 'zone_code', 'boundary_color', 'created_at', 'updated_at']
 
+
 class LightingDeviceSerializer(serializers.ModelSerializer):
     address = AddressSerializer()
     zone = ZoneSerializer()
+    qr_code_url = serializers.SerializerMethodField()
 
     class Meta:
         model = LightingDevice
         fields = '__all__'
+
+    def get_qr_code_url(self, obj):
+        if obj.qr_code:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.qr_code.url)
+        return None
 
 
 class CustomUserSerializer(serializers.ModelSerializer):

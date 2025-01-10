@@ -1,5 +1,9 @@
 from django.db import models
 from django.contrib.gis.db.models import PointField
+import qrcode
+import io
+from django.core.files.base import ContentFile
+from django.core.files.storage import default_storage
 
 from core.models.address import Address
 from core.models.zone import Zone
@@ -45,16 +49,48 @@ class LightingDevice(models.Model):
     location = PointField(verbose_name='Localização')
     device_image = models.ImageField(upload_to='devices/', blank=True, null=True, verbose_name='Imagem do dispositivo')
     operational_status = models.CharField(max_length=50, choices=STATUS_CHOICES, verbose_name='Status Operacional')
-    qr_code = models.TextField(blank=True, null=True, verbose_name='Código QR')
+    qr_code = models.ImageField(upload_to='qr_codes/', null=True, blank=True)
     energy_source = models.CharField(max_length=100, verbose_name='Fonte de Energia', blank=True, null=True)
     additional_features = models.TextField(blank=True, null=True, verbose_name='Recursos Adicionais')
     nearby_installations = models.TextField(blank=True, null=True, verbose_name='Instalações Próximas')
     last_maintenance_date = models.DateField(null=True, blank=True, verbose_name='Data da Última Manutenção')
     zone = models.ForeignKey(Zone, on_delete=models.SET_NULL, null=True, related_name='devices', verbose_name='Zona')
 
+
     class Meta:
         verbose_name = 'Dispositivo'
         verbose_name_plural = 'Dispositivos'
 
+    def generate_qr_code(self):
+        qr = qrcode.QRCode(
+            version=1,
+            error_correction=qrcode.constants.ERROR_CORRECT_L,
+            box_size=10,
+            border=4,
+        )
+
+        qr.add_data(self.code)
+        qr.make(fit=True)
+
+        img = qr.make_image(fill_color="black", back_color="white")
+
+        buffer = io.BytesIO()
+        img.save(buffer, format='PNG')
+        buffer.seek(0)
+
+        filename = f'qr_codes/device_{self.code}.png'
+
+        if self.qr_code:
+            if default_storage.exists(self.qr_code.name):
+                default_storage.delete(self.qr_code.name)
+
+        self.qr_code.save(filename, ContentFile(buffer.getvalue()), save=False)
+
+    def save(self, *args, **kwargs):
+        is_new = self._state.adding
+        if is_new or not self.qr_code:
+            self.generate_qr_code()
+        super().save(*args, **kwargs)
+
     def __str__(self):
-        return f"{self.type} - {self.code}"
+        return f"{self.code} - {self.structural_name}"
