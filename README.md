@@ -276,8 +276,6 @@ Universidade Tecnológica Federal do Paraná. Cornélio Procópio, 2025.
 Orientador: Dr. André Luiz Przybysz. Coorientadora: Dra. Regina Negri Pagani.
 Aprovado em 10 de fevereiro de 2025.
 
-A monografia está licenciada sob Creative Commons BY-NC-ND 4.0 Internacional.
-
 ## Licença
 
 O código deste repositório está sob licença MIT. Ver `LICENSE`.
